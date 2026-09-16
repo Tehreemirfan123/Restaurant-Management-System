@@ -1,0 +1,78 @@
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy import text
+
+from backend.database.database import Base, engine
+
+# Import models so their tables are registered on Base.metadata
+# before create_all runs.
+from backend.models import models  # noqa: F401
+from backend.routers.auth import router as auth_router
+from backend.routers.menu import router as menu_router
+from backend.routers.orders import router as orders_router
+from backend.routers.payments import router as payment_router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Create any missing tables at startup. For schema changes over time,
+    # switch to Alembic migrations (alembic is already in requirements).
+    Base.metadata.create_all(bind=engine)
+    yield
+
+
+app = FastAPI(
+    title="Restaurant Management System API",
+    version="1.0.0",
+    lifespan=lifespan,
+)
+
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
+app.include_router(auth_router)
+app.include_router(menu_router)
+app.include_router(orders_router)
+app.include_router(payment_router)
+
+
+@app.get("/")
+def root():
+    return {
+        "message": "Restaurant Management System API is running"
+    }
+
+
+@app.get("/health")
+def health_check():
+    try:
+        with engine.connect() as connection:
+            connection.execute(text("SELECT 1"))
+
+        return {
+            "status": "healthy",
+            "database": "connected",
+        }
+
+    except Exception as e:
+        return {
+            "status": "unhealthy",
+            "database": "disconnected",
+            "error": str(e),
+        }
+
+
+@app.get("/api/test")
+def test():
+    return {
+        "message": "Hello from Backend!"
+    }
