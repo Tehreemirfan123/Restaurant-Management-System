@@ -50,6 +50,17 @@ class RoleEnum(str, enum.Enum):
     staff = "staff"
 
 
+class TableStatusEnum(str, enum.Enum):
+    available = "available"
+    occupied = "occupied"
+    reserved = "reserved"
+
+
+class OrderTypeEnum(str, enum.Enum):
+    dine_in = "dine_in"
+    takeaway = "takeaway"
+
+
 class Staff(Base):
     __tablename__ = "staff"
 
@@ -155,9 +166,27 @@ class Order(Base):
         nullable=False,
     )
 
+    order_type: Mapped[OrderTypeEnum] = mapped_column(
+        Enum(OrderTypeEnum),
+        default=OrderTypeEnum.takeaway,
+        nullable=False,
+    )
+
     total_amount: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         nullable=False,
+    )
+
+    table_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("tables.id"),
+        nullable=True,
+    )
+
+    customer_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("customers.id"),
+        nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(
@@ -172,9 +201,17 @@ class Order(Base):
     )
 
     payment: Mapped["Payment | None"] = relationship(
-    back_populates="order",
-    uselist=False,
-    cascade="all, delete-orphan",
+        back_populates="order",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
+    table: Mapped["Table | None"] = relationship(
+        back_populates="orders",
+    )
+
+    customer: Mapped["Customer | None"] = relationship(
+        back_populates="orders",
     )
 
 
@@ -255,4 +292,177 @@ class Payment(Base):
 
     order: Mapped["Order"] = relationship(
         back_populates="payment",
+    )
+
+class Customer(Base):
+    __tablename__ = "customers"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+    )
+
+    phone: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+        index=True,
+    )
+
+    email: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    orders: Mapped[list["Order"]] = relationship(
+        back_populates="customer",
+    )
+
+
+class Table(Base):
+    __tablename__ = "tables"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    number: Mapped[int] = mapped_column(
+        nullable=False,
+        unique=True,
+        index=True,
+    )
+
+    capacity: Mapped[int] = mapped_column(
+        nullable=False,
+    )
+
+    status: Mapped[TableStatusEnum] = mapped_column(
+        Enum(TableStatusEnum),
+        default=TableStatusEnum.available,
+        nullable=False,
+    )
+
+    orders: Mapped[list["Order"]] = relationship(
+        back_populates="table",
+    )
+
+
+class InventoryItem(Base):
+    __tablename__ = "inventory_items"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    name: Mapped[str] = mapped_column(
+        String(150),
+        nullable=False,
+        unique=True,
+    )
+
+    unit: Mapped[str] = mapped_column(
+        String(30),
+        nullable=False,
+    )
+
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(10, 3),
+        default=Decimal("0"),
+        nullable=False,
+    )
+
+    reorder_level: Mapped[Decimal] = mapped_column(
+        Numeric(10, 3),
+        default=Decimal("0"),
+        nullable=False,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    recipe_ingredients: Mapped[list["RecipeIngredient"]] = relationship(
+        back_populates="inventory_item",
+    )
+
+
+class Recipe(Base):
+    __tablename__ = "recipes"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    menu_item_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("menu_items.id"),
+        nullable=False,
+        unique=True,
+    )
+
+    notes: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    menu_item: Mapped["MenuItem"] = relationship()
+
+    ingredients: Mapped[list["RecipeIngredient"]] = relationship(
+        back_populates="recipe",
+        cascade="all, delete-orphan",
+    )
+
+
+class RecipeIngredient(Base):
+    __tablename__ = "recipe_ingredients"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    recipe_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("recipes.id"),
+        nullable=False,
+    )
+
+    inventory_item_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("inventory_items.id"),
+        nullable=False,
+    )
+
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(10, 3),
+        nullable=False,
+    )
+
+    recipe: Mapped["Recipe"] = relationship(
+        back_populates="ingredients",
+    )
+
+    inventory_item: Mapped["InventoryItem"] = relationship(
+        back_populates="recipe_ingredients",
     )
