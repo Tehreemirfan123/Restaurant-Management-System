@@ -5,9 +5,12 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from models.models import (
+    Customer,
     MenuItem,
     Order,
+    OrderTypeEnum,
     OrderItem,
+    Table,
 )
 from schemas.schemas import OrderCreate
 
@@ -40,8 +43,37 @@ def create_order(
             detail="One or more menu items were not found",
         )
 
+    # A dine-in order needs a table; validate any references that were given.
+    if order_data.table_id is not None:
+        table = db.get(Table, order_data.table_id)
+        if table is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Table not found",
+            )
+
+    if (
+        order_data.order_type == OrderTypeEnum.dine_in
+        and order_data.table_id is None
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="A dine-in order requires a table",
+        )
+
+    if order_data.customer_id is not None:
+        customer = db.get(Customer, order_data.customer_id)
+        if customer is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Customer not found",
+            )
+
     order = Order(
         total_amount=0,
+        order_type=order_data.order_type,
+        table_id=order_data.table_id,
+        customer_id=order_data.customer_id,
     )
 
     db.add(order)

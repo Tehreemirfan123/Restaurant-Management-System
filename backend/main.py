@@ -10,9 +10,13 @@ from database.database import Base, engine
 # before create_all runs.
 from models import models  # noqa: F401
 from routers.auth import router as auth_router
+from routers.customers import router as customers_router
+from routers.inventory import router as inventory_router
 from routers.menu import router as menu_router
 from routers.orders import router as orders_router
 from routers.payments import router as payment_router
+from routers.recipes import router as recipes_router
+from routers.tables import router as tables_router
 
 
 @asynccontextmanager
@@ -43,6 +47,10 @@ app.include_router(auth_router)
 app.include_router(menu_router)
 app.include_router(orders_router)
 app.include_router(payment_router)
+app.include_router(customers_router)
+app.include_router(tables_router)
+app.include_router(inventory_router)
+app.include_router(recipes_router)
 
 
 @app.get("/")
