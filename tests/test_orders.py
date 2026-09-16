@@ -81,3 +81,67 @@ def test_create_order_with_unavailable_item(client):
     )
 
     assert response.status_code == 400
+
+# Dine-in order linked to a table
+def test_create_dine_in_order_with_table(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        json={
+            "name": "Seekh Kebab",
+            "description": None,
+            "price": 300,
+            "category": "starters",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    table = client.post(
+        "/tables",
+        headers=auth_headers,
+        json={"number": 21, "capacity": 4},
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "dine_in",
+            "table_id": table["id"],
+            "items": [
+                {"menu_item_id": menu_item["id"], "quantity": 3}
+            ],
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["order_type"] == "dine_in"
+    assert data["table_id"] == table["id"]
+    assert data["total_amount"] == "900.00"
+
+
+# Dine-in without a table should be rejected
+def test_dine_in_requires_table(client):
+    menu_item = client.post(
+        "/menu",
+        json={
+            "name": "Naan",
+            "description": None,
+            "price": 40,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "dine_in",
+            "items": [
+                {"menu_item_id": menu_item["id"], "quantity": 1}
+            ],
+        },
+    )
+
+    assert response.status_code == 400

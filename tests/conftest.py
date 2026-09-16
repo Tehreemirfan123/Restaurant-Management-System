@@ -81,3 +81,41 @@ def client(
         yield test_client
 
     app.dependency_overrides.clear()
+
+
+@pytest.fixture
+def auth_headers(client, db_session):
+    """Create an admin, log in, and return Authorization headers.
+
+    Most back-office endpoints (customers, tables, inventory, recipes)
+    require a logged-in staff member.
+    """
+    import uuid
+
+    from core.security import hash_password
+    from models.models import RoleEnum, Staff
+
+    # Tests share one database without per-test rollback, so the username
+    # must be unique across the whole run to avoid clashes.
+    username = f"tester-admin-{uuid.uuid4().hex[:8]}"
+
+    staff = Staff(
+        username=username,
+        full_name="Tester Admin",
+        hashed_password=hash_password("testpass123"),
+        role=RoleEnum.admin,
+    )
+    db_session.add(staff)
+    db_session.commit()
+
+    response = client.post(
+        "/auth/login",
+        data={
+            "username": username,
+            "password": "testpass123",
+        },
+    )
+
+    token = response.json()["access_token"]
+
+    return {"Authorization": f"Bearer {token}"}
