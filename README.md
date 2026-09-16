@@ -1,4 +1,4 @@
-# Mehak's Kitchen — Restaurant Management System
+# Restaurant Management System
 
 Full-stack restaurant management system.
 
