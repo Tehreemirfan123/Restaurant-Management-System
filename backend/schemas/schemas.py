@@ -4,7 +4,7 @@ from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from backend.models.models import (
+from models.models import (
     CategoryEnum,
     OrderStatusEnum,
     PaymentMethodEnum,

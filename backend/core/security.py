@@ -3,7 +3,7 @@ from datetime import datetime, timedelta, timezone
 import bcrypt
 import jwt
 
-from backend.core.config import (
+from core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     JWT_ALGORITHM,
     SECRET_KEY,

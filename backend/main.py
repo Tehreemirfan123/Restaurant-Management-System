@@ -4,15 +4,15 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from backend.database.database import Base, engine
+from database.database import Base, engine
 
 # Import models so their tables are registered on Base.metadata
 # before create_all runs.
-from backend.models import models  # noqa: F401
-from backend.routers.auth import router as auth_router
-from backend.routers.menu import router as menu_router
-from backend.routers.orders import router as orders_router
-from backend.routers.payments import router as payment_router
+from models import models  # noqa: F401
+from routers.auth import router as auth_router
+from routers.menu import router as menu_router
+from routers.orders import router as orders_router
+from routers.payments import router as payment_router
 
 
 @asynccontextmanager

@@ -4,12 +4,12 @@ from uuid import UUID
 from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.models.models import (
+from models.models import (
     Order,
     Payment,
     PaymentStatusEnum,
 )
-from backend.schemas.schemas import PaymentCreate
+from schemas.schemas import PaymentCreate
 
 
 def create_payment(

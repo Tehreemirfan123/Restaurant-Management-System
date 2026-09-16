@@ -3,13 +3,13 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from backend.database.database import get_db
-from backend.schemas.schemas import (
+from database.database import get_db
+from schemas.schemas import (
     MenuItemCreate,
     MenuItemResponse,
     MenuItemUpdate,
 )
-from backend.services.menu_service import (
+from services.menu_service import (
     create_menu_item,
     delete_menu_item,
     get_menu_item,

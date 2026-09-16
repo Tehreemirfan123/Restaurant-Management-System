@@ -35,15 +35,17 @@ Copy `.env.example` to `.env` and set your values (database URLs, `SECRET_KEY`).
 Create the initial admin and sample menu data:
 
 ```bash
-python -m backend.seed
+cd backend
+python seed.py
 ```
 
 Default admin credentials (change via `.env`): `admin` / `admin123`
 
-Run the API (from the project root):
+Run the API (from the `backend/` directory):
 
 ```bash
-uvicorn backend.main:app --reload --port 8000
+cd backend
+uvicorn main:app --reload --port 8000
 ```
 
 - API docs: http://127.0.0.1:8000/docs

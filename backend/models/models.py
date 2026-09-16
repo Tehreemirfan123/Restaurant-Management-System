@@ -16,7 +16,7 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from backend.database.database import Base
+from database.database import Base
 
 
 class CategoryEnum(str, enum.Enum):

@@ -4,12 +4,12 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.models.models import (
+from models.models import (
     MenuItem,
     Order,
     OrderItem,
 )
-from backend.schemas.schemas import OrderCreate
+from schemas.schemas import OrderCreate
 
 
 def create_order(

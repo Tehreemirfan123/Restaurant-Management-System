@@ -3,8 +3,8 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.models.models import MenuItem
-from backend.schemas.schemas import (
+from models.models import MenuItem
+from schemas.schemas import (
     MenuItemCreate,
     MenuItemUpdate,
 )

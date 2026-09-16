@@ -1,7 +1,7 @@
 """Bootstrap script: create the initial admin account and sample menu.
 
-Run once after the database is up:
-    python -m backend.seed
+Run once after the database is up (from the backend/ directory):
+    python seed.py
 
 Reads SEED_ADMIN_USERNAME / SEED_ADMIN_PASSWORD from the environment
 (falling back to admin / admin123). It is safe to run repeatedly:
@@ -10,10 +10,10 @@ existing rows are left untouched.
 
 import os
 
-from backend.database.database import Base, SessionLocal, engine
-from backend.models.models import CategoryEnum, MenuItem, RoleEnum, Staff
-from backend.schemas.schemas import StaffCreate
-from backend.services.staff_service import (
+from database.database import Base, SessionLocal, engine
+from models.models import CategoryEnum, MenuItem, RoleEnum, Staff
+from schemas.schemas import StaffCreate
+from services.staff_service import (
     create_staff,
     get_staff_by_username,
 )

@@ -2,16 +2,16 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.orm import Session
 
-from backend.core.security import create_access_token
-from backend.database.database import get_db
-from backend.dependencies.auth import get_current_staff, require_admin
-from backend.models.models import Staff
-from backend.schemas.schemas import (
+from core.security import create_access_token
+from database.database import get_db
+from dependencies.auth import get_current_staff, require_admin
+from models.models import Staff
+from schemas.schemas import (
     StaffCreate,
     StaffResponse,
     Token,
 )
-from backend.services.staff_service import (
+from services.staff_service import (
     authenticate_staff,
     create_staff,
     get_staff_by_username,

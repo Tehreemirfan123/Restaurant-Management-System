@@ -1,5 +1,5 @@
-from backend.core.security import hash_password
-from backend.models.models import RoleEnum, Staff
+from core.security import hash_password
+from models.models import RoleEnum, Staff
 
 
 def _make_staff(

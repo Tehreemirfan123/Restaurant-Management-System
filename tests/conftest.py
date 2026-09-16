@@ -1,15 +1,23 @@
 import os
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
+# App modules use imports rooted at the backend/ directory (e.g.
+# `from database.database import ...`), so backend/ must be on sys.path.
+BACKEND_DIR = Path(__file__).resolve().parent.parent / "backend"
+sys.path.insert(0, str(BACKEND_DIR))
 
 import pytest
+from dotenv import load_dotenv
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from backend.database.database import Base, get_db
-from backend.main import app
+from database.database import Base, get_db
+from main import app
+
+# Load TEST_DATABASE_URL (and friends) from backend/.env
+load_dotenv(BACKEND_DIR / ".env")
 
 
 TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL")

@@ -1,9 +1,9 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from backend.core.security import hash_password, verify_password
-from backend.models.models import Staff
-from backend.schemas.schemas import StaffCreate
+from core.security import hash_password, verify_password
+from models.models import Staff
+from schemas.schemas import StaffCreate
 
 
 def get_staff_by_username(
