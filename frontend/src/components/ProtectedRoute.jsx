@@ -9,7 +9,9 @@ import { useAuth } from "../context/AuthContext";
 export default function ProtectedRoute({ children, adminOnly = false }) {
     const { isAuthenticated, isAdmin, loading } = useAuth();
 
-    if (loading) {
+    // Only show the loading gate while we're still checking AND have no
+    // cached session yet — otherwise a restored session renders immediately.
+    if (loading && !isAuthenticated) {
         return (
             <div className="min-h-screen flex items-center justify-center text-gray-500">
                 Loading...

@@ -1,4 +1,6 @@
-from datetime import datetime, timedelta, timezone
+from datetime import timedelta
+
+from core.config import local_today
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -22,7 +24,7 @@ from models.models import (
 
 def _period_start(period: str):
     """Start date (inclusive) for a reporting period, or None for all-time."""
-    today = datetime.now(timezone.utc).date()
+    today = local_today()
     if period == "today":
         return today
     if period == "week":
@@ -91,7 +93,7 @@ def _period_metrics(db: Session, period: str) -> dict:
 
 
 def get_summary(db: Session, period: str = "all") -> dict:
-    today = datetime.now(timezone.utc).date()
+    today = local_today()
 
     paid = Payment.status == PaymentStatusEnum.paid
 

@@ -1,9 +1,9 @@
-from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from core.config import local_today
 from models.models import DayOfWeekEnum, MenuItem
 from schemas.schemas import (
     MenuItemCreate,
@@ -38,7 +38,7 @@ def get_todays_menu(
 ) -> list[MenuItem]:
     """Available dishes for today: the day's rotating dish plus any
     day-agnostic items (specials with no set day)."""
-    today = _WEEKDAYS[datetime.now(timezone.utc).weekday()]
+    today = _WEEKDAYS[local_today().weekday()]
 
     return list(
         db.scalars(

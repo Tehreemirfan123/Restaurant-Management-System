@@ -30,6 +30,19 @@ export default function AdminReports() {
             .finally(() => setLoading(false));
     }, [period]);
 
+    function handlePrint() {
+        // Print in light theme for a clean PDF, then restore.
+        const root = document.documentElement;
+        const wasDark = root.classList.contains("dark");
+        if (wasDark) root.classList.remove("dark");
+        const restore = () => {
+            if (wasDark) root.classList.add("dark");
+            window.removeEventListener("afterprint", restore);
+        };
+        window.addEventListener("afterprint", restore);
+        window.print();
+    }
+
     const periodLabel =
         period === "week" ? "Weekly (last 7 days)" : "Monthly (last 30 days)";
     const generated = new Date().toLocaleString();
@@ -62,7 +75,7 @@ export default function AdminReports() {
                     ))}
                 </select>
                 <button
-                    onClick={() => window.print()}
+                    onClick={handlePrint}
                     disabled={!data}
                     className="bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 text-white text-sm font-medium px-4 py-2 rounded-lg"
                 >

@@ -106,6 +106,12 @@ export default function CustomerMenu() {
             {loading && <p className="text-gray-500">Loading menu...</p>}
             {error && <p className="text-red-600">{error}</p>}
 
+            {!loading && !error && menu.length === 0 && (
+                <p className="text-gray-500 text-center py-8">
+                    Our menu is being updated — please check back soon.
+                </p>
+            )}
+
             {!loading &&
                 DAYS.map((day) => {
                     const dishes = byDay.map[day];

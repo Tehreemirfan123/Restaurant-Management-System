@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link, NavLink, Outlet } from "react-router-dom";
+import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { DISPLAY_PHONE } from "../config";
 import { useCart } from "../context/CartContext";
@@ -16,12 +16,19 @@ const LINKS = [
 export default function CustomerLayout() {
     const { totalItems } = useCart();
     const [info, setInfo] = useState(null);
+    const [menuOpen, setMenuOpen] = useState(false);
+    const location = useLocation();
 
     useEffect(() => {
         getOrderingStatus()
             .then(setInfo)
             .catch(() => {});
     }, []);
+
+    // Close the mobile menu whenever the route changes.
+    useEffect(() => {
+        setMenuOpen(false);
+    }, [location.pathname]);
 
     const name = info?.restaurant_name || "Mehak's Kitchen";
     const phone = info?.contact_phone || DISPLAY_PHONE;
@@ -42,14 +49,62 @@ export default function CustomerLayout() {
                         </span>
                     </Link>
 
-                    <nav className="flex items-center gap-1 text-sm overflow-x-auto">
+                    <div className="flex items-center gap-2">
+                        {/* Desktop links */}
+                        <nav className="hidden md:flex items-center gap-1 text-sm">
+                            {LINKS.map((l) => (
+                                <NavLink
+                                    key={l.to}
+                                    to={l.to}
+                                    end={l.end}
+                                    className={({ isActive }) =>
+                                        `px-3 py-1.5 rounded-lg whitespace-nowrap ${
+                                            isActive
+                                                ? "bg-white/15 font-medium"
+                                                : "text-gold-100 hover:bg-white/10"
+                                        }`
+                                    }
+                                >
+                                    {l.label}
+                                </NavLink>
+                            ))}
+                        </nav>
+
+                        {/* Cart (always visible) */}
+                        <Link
+                            to="/cart"
+                            className="relative bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg text-sm font-medium"
+                        >
+                            Cart
+                            {totalItems > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-white text-maroon-800 text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
+                                    {totalItems}
+                                </span>
+                            )}
+                        </Link>
+
+                        {/* Mobile hamburger */}
+                        <button
+                            onClick={() => setMenuOpen((o) => !o)}
+                            aria-label="Menu"
+                            aria-expanded={menuOpen}
+                            className="md:hidden p-2 rounded-lg hover:bg-white/10 text-xl leading-none"
+                        >
+                            ☰
+                        </button>
+                    </div>
+                </div>
+
+                {/* Mobile dropdown */}
+                {menuOpen && (
+                    <nav className="md:hidden border-t border-white/10 px-4 py-2 flex flex-col">
                         {LINKS.map((l) => (
                             <NavLink
                                 key={l.to}
                                 to={l.to}
                                 end={l.end}
                                 className={({ isActive }) =>
-                                    `px-3 py-1.5 rounded-lg whitespace-nowrap ${
+                                    `px-3 py-2 rounded-lg ${
                                         isActive
                                             ? "bg-white/15 font-medium"
                                             : "text-gold-100 hover:bg-white/10"
@@ -59,19 +114,8 @@ export default function CustomerLayout() {
                                 {l.label}
                             </NavLink>
                         ))}
-                        <Link
-                            to="/cart"
-                            className="relative ml-1 bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg font-medium"
-                        >
-                            Cart
-                            {totalItems > 0 && (
-                                <span className="absolute -top-2 -right-2 bg-white text-maroon-800 text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center">
-                                    {totalItems}
-                                </span>
-                            )}
-                        </Link>
                     </nav>
-                </div>
+                )}
             </header>
 
             {/* Page */}

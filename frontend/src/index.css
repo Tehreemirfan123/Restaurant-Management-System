@@ -64,6 +64,11 @@
 .dark .border-cream-200 {
     border-color: #3a3a3a !important;
 }
+/* Brand maroon text is too dark on dark surfaces — lighten it for contrast. */
+.dark .text-maroon-700,
+.dark .text-maroon-800 {
+    color: #e79aa8 !important;
+}
 .dark input,
 .dark select,
 .dark textarea {
