@@ -2,8 +2,10 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import Cart from "./pages/Cart";
 import CustomerMenu from "./pages/CustomerMenu";
 import Login from "./pages/Login";
+import OrderTracking from "./pages/OrderTracking";
 import StaffDashboard from "./pages/StaffDashboard";
 
 function App() {
@@ -11,6 +13,8 @@ function App() {
         <Routes>
             {/* Public / customer */}
             <Route path="/" element={<CustomerMenu />} />
+            <Route path="/cart" element={<Cart />} />
+            <Route path="/order/:id" element={<OrderTracking />} />
             <Route path="/login" element={<Login />} />
 
             {/* Staff */}
