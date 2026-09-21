@@ -1,1 +1,20 @@
 @import "tailwindcss";
+
+/* Mehak's Kitchen brand palette (from the official brochure). */
+@theme {
+    --color-maroon-700: #791f2a;
+    --color-maroon-800: #5f1721;
+    --color-maroon-900: #4a1119;
+
+    --color-cream-50: #fffdf8;
+    --color-cream-100: #fff8eb;
+    --color-cream-200: #f3e9d6;
+
+    --color-gold-100: #f6e8cb;
+    --color-gold-200: #ecd3a0;
+    --color-gold-500: #d69a2a;
+    --color-gold-600: #bd851f;
+
+    --color-sage-600: #526b4d;
+    --color-sage-700: #435842;
+}

@@ -148,7 +148,7 @@ export default function AdminInventory() {
                     <div className="flex gap-2">
                         <button
                             type="submit"
-                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 rounded-lg"
+                            className="flex-1 bg-maroon-700 hover:bg-maroon-800 text-white text-sm font-medium py-2 rounded-lg"
                         >
                             {editingId ? "Save" : "Add"}
                         </button>
@@ -189,7 +189,7 @@ export default function AdminInventory() {
                             <div className="flex gap-2 shrink-0">
                                 <button
                                     onClick={() => startEdit(item)}
-                                    className="text-sm text-amber-700 hover:underline"
+                                    className="text-sm text-maroon-800 hover:underline"
                                 >
                                     Edit
                                 </button>

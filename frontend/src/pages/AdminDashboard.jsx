@@ -22,7 +22,7 @@ export default function AdminDashboard() {
                         <Link
                             key={t.label}
                             to={t.to}
-                            className="bg-white rounded-xl shadow-sm p-6 hover:ring-2 hover:ring-amber-400 transition"
+                            className="bg-white rounded-xl shadow-sm p-6 hover:ring-2 hover:ring-gold-500 transition"
                         >
                             <h2 className="text-base font-semibold text-gray-800">
                                 {t.label}

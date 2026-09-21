@@ -96,7 +96,7 @@ export default function AdminStaff() {
 
                     <button
                         type="submit"
-                        className="w-full bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 rounded-lg"
+                        className="w-full bg-maroon-700 hover:bg-maroon-800 text-white text-sm font-medium py-2 rounded-lg"
                     >
                         Add
                     </button>

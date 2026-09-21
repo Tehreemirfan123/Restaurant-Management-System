@@ -52,7 +52,7 @@ export default function Login() {
                             onChange={(e) => setUsername(e.target.value)}
                             required
                             autoFocus
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gold-500"
                         />
                     </div>
 
@@ -65,7 +65,7 @@ export default function Login() {
                             value={password}
                             onChange={(e) => setPassword(e.target.value)}
                             required
-                            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                            className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gold-500"
                         />
                     </div>
 
@@ -76,7 +76,7 @@ export default function Login() {
                     <button
                         type="submit"
                         disabled={submitting}
-                        className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-semibold py-2 rounded-lg transition"
+                        className="w-full bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 text-white font-semibold py-2 rounded-lg transition"
                     >
                         {submitting ? "Signing in..." : "Sign In"}
                     </button>

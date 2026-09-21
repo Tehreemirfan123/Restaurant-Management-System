@@ -18,7 +18,7 @@ const NEXT_LABEL = {
 
 const STATUS_BADGE = {
     received: "bg-blue-100 text-blue-800",
-    preparing: "bg-amber-100 text-amber-800",
+    preparing: "bg-gold-100 text-maroon-800",
     ready: "bg-green-100 text-green-800",
 };
 
@@ -122,7 +122,7 @@ export default function Kitchen() {
                             {NEXT_STATUS[order.status] && (
                                 <button
                                     onClick={() => advance(order)}
-                                    className="mt-3 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 rounded-lg"
+                                    className="mt-3 bg-maroon-700 hover:bg-maroon-800 text-white text-sm font-medium py-2 rounded-lg"
                                 >
                                     {NEXT_LABEL[order.status]}
                                 </button>
