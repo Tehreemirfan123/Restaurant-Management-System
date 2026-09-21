@@ -617,3 +617,32 @@ class OrderFeedback(Base):
     order: Mapped["Order"] = relationship(
         back_populates="feedback",
     )
+
+
+class Settings(Base):
+    __tablename__ = "settings"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    # Master switch to stop taking orders when at capacity / closed.
+    accepting_orders: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    # Max orders accepted per day (null = no limit). Pilot starts at ~5.
+    daily_order_cap: Mapped[int | None] = mapped_column(
+        nullable=True,
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )

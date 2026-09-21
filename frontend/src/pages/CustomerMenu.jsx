@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import CustomerHeader from "../components/CustomerHeader";
 import { DISPLAY_PHONE } from "../config";
 import { useCart } from "../context/CartContext";
-import { getTodaysMenu } from "../services/api";
+import { getOrderingStatus, getTodaysMenu } from "../services/api";
 import { whatsappUrl } from "../utils/whatsapp";
 
 export default function CustomerMenu() {
@@ -12,6 +12,7 @@ export default function CustomerMenu() {
     const [menu, setMenu] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [accepting, setAccepting] = useState(true);
 
     const today = new Date().toLocaleDateString(undefined, {
         weekday: "long",
@@ -22,6 +23,9 @@ export default function CustomerMenu() {
             .then((data) => setMenu(data || []))
             .catch((err) => setError(err.message || "Failed to load menu"))
             .finally(() => setLoading(false));
+        getOrderingStatus()
+            .then((s) => setAccepting(s.accepting_orders))
+            .catch(() => {});
     }, []);
 
     function quantityInCart(id) {
@@ -44,6 +48,13 @@ export default function CustomerMenu() {
                         One day, one main dish — prepared fresh daily.
                     </p>
                 </div>
+
+                {!accepting && (
+                    <div className="bg-red-50 border border-red-200 text-red-700 rounded-xl p-4 mb-4 text-center text-sm">
+                        We&apos;re not taking orders right now. Please check
+                        back later.
+                    </div>
+                )}
 
                 {loading && <p className="text-gray-500">Loading menu...</p>}
                 {error && <p className="text-red-600">{error}</p>}

@@ -10,6 +10,7 @@ const TILES = [
     { label: "Staff", to: "/admin/staff", desc: "Manage team accounts" },
     { label: "Customers", to: "/admin/customers", desc: "Segments & repeat orders" },
     { label: "Reports", to: "/admin/reports", desc: "Sales & performance" },
+    { label: "Settings", to: "/admin/settings", desc: "Orders on/off & limit" },
 ];
 
 export default function AdminDashboard() {

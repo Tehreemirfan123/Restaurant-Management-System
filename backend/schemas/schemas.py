@@ -407,3 +407,23 @@ class FeedbackResponse(BaseModel):
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ---- Settings ----
+
+class SettingsUpdate(BaseModel):
+    accepting_orders: bool | None = None
+    daily_order_cap: int | None = Field(default=None, ge=0)
+
+
+class SettingsResponse(BaseModel):
+    accepting_orders: bool
+    daily_order_cap: int | None
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class OrderingStatus(BaseModel):
+    accepting_orders: bool
+    orders_today: int
+    daily_order_cap: int | None

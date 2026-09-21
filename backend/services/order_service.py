@@ -21,6 +21,24 @@ def create_order(
     db: Session,
     order_data: OrderCreate,
 ) -> Order:
+    # Capacity gate: honour the accepting-orders switch and daily cap.
+    from services.settings_service import get_settings, orders_today
+
+    settings = get_settings(db)
+    if not settings.accepting_orders:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Sorry, we are not accepting orders right now",
+        )
+    if (
+        settings.daily_order_cap is not None
+        and orders_today(db) >= settings.daily_order_cap
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="We've reached today's order limit. Please try tomorrow.",
+        )
+
     menu_item_ids = [
         item.menu_item_id
         for item in order_data.items

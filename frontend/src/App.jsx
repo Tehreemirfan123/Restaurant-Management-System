@@ -7,6 +7,7 @@ import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
 import AdminRecipesPage from "./pages/AdminRecipes";
 import AdminReports from "./pages/AdminReports";
+import AdminSettings from "./pages/AdminSettings";
 import AdminStaff from "./pages/AdminStaff";
 import AdminWaste from "./pages/AdminWaste";
 import Cart from "./pages/Cart";
@@ -99,6 +100,14 @@ function App() {
                 element={
                     <ProtectedRoute adminOnly>
                         <AdminWaste />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/settings"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminSettings />
                     </ProtectedRoute>
                 }
             />

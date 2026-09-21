@@ -249,6 +249,20 @@ export function createPayment(payload) {
     return request("/payments", { method: "POST", body: payload });
 }
 
+// ---- Settings ----
+
+export function getOrderingStatus() {
+    return request("/settings/status", { auth: false });
+}
+
+export function getSettings() {
+    return request("/settings");
+}
+
+export function updateSettings(payload) {
+    return request("/settings", { method: "PUT", body: payload });
+}
+
 // ---- Health ----
 
 export async function checkBackendHealth() {
