@@ -18,7 +18,7 @@ SECRET_KEY = os.getenv(
 JWT_ALGORITHM = "HS256"
 
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
-    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")
+    os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080")  # 7 days
 )
 
 # Flat delivery fee (Rs.) added to delivery orders. Matches the brochure's

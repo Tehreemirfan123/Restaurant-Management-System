@@ -9,11 +9,38 @@ import {
 
 const AuthContext = createContext(null);
 
+const STAFF_KEY = "mk_staff";
+
+function loadCachedStaff() {
+    try {
+        const raw = localStorage.getItem(STAFF_KEY);
+        return raw ? JSON.parse(raw) : null;
+    } catch {
+        return null;
+    }
+}
+
+function cacheStaff(staff) {
+    try {
+        if (staff) {
+            localStorage.setItem(STAFF_KEY, JSON.stringify(staff));
+        } else {
+            localStorage.removeItem(STAFF_KEY);
+        }
+    } catch {
+        // ignore storage errors
+    }
+}
+
 export function AuthProvider({ children }) {
-    const [staff, setStaff] = useState(null);
+    // Restore optimistically from cache so a refresh doesn't bounce to login.
+    const [staff, setStaff] = useState(() =>
+        getToken() ? loadCachedStaff() : null
+    );
     const [loading, setLoading] = useState(true);
 
-    // On mount, if a token exists, try to restore the session.
+    // On mount, refresh the profile in the background. Only log out if the
+    // token is actually rejected (401) — not on transient/network errors.
     useEffect(() => {
         const token = getToken();
 
@@ -23,10 +50,17 @@ export function AuthProvider({ children }) {
         }
 
         getCurrentStaff()
-            .then((data) => setStaff(data))
-            .catch(() => {
-                setToken(null);
-                setStaff(null);
+            .then((data) => {
+                setStaff(data);
+                cacheStaff(data);
+            })
+            .catch((err) => {
+                if (err?.status === 401) {
+                    setToken(null);
+                    cacheStaff(null);
+                    setStaff(null);
+                }
+                // Other errors: keep the cached session as-is.
             })
             .finally(() => setLoading(false));
     }, []);
@@ -36,11 +70,13 @@ export function AuthProvider({ children }) {
         setToken(data.access_token);
         const profile = await getCurrentStaff();
         setStaff(profile);
+        cacheStaff(profile);
         return profile;
     }
 
     function logout() {
         setToken(null);
+        cacheStaff(null);
         setStaff(null);
     }
 
