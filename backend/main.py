@@ -14,6 +14,7 @@ from routers.payments import router as payment_router
 from routers.recipes import router as recipes_router
 from routers.reports import router as reports_router
 from routers.tables import router as tables_router
+from routers.waste import router as waste_router
 
 
 # The database schema is managed by Alembic migrations, not create_all.
@@ -49,6 +50,7 @@ app.include_router(tables_router)
 app.include_router(inventory_router)
 app.include_router(recipes_router)
 app.include_router(reports_router)
+app.include_router(waste_router)
 
 
 @app.get("/")

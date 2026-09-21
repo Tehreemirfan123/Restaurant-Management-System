@@ -8,6 +8,7 @@ import AdminMenu from "./pages/AdminMenu";
 import AdminRecipesPage from "./pages/AdminRecipes";
 import AdminReports from "./pages/AdminReports";
 import AdminStaff from "./pages/AdminStaff";
+import AdminWaste from "./pages/AdminWaste";
 import Cart from "./pages/Cart";
 import CustomerMenu from "./pages/CustomerMenu";
 import Kitchen from "./pages/Kitchen";
@@ -90,6 +91,14 @@ function App() {
                 element={
                     <ProtectedRoute adminOnly>
                         <AdminRecipesPage />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/waste"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminWaste />
                     </ProtectedRoute>
                 }
             />

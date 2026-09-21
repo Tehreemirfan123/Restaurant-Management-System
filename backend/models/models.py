@@ -456,6 +456,11 @@ class InventoryItem(Base):
         nullable=False,
     )
 
+    supplier: Mapped[str | None] = mapped_column(
+        String(150),
+        nullable=True,
+    )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),
@@ -530,3 +535,37 @@ class RecipeIngredient(Base):
     inventory_item: Mapped["InventoryItem"] = relationship(
         back_populates="recipe_ingredients",
     )
+
+
+class WasteLog(Base):
+    __tablename__ = "waste_logs"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    inventory_item_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("inventory_items.id"),
+        nullable=True,
+    )
+
+    description: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    quantity: Mapped[Decimal] = mapped_column(
+        Numeric(10, 3),
+        nullable=False,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    inventory_item: Mapped["InventoryItem | None"] = relationship()

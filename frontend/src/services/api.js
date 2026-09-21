@@ -183,6 +183,16 @@ export function deleteInventoryItem(id) {
     return request(`/inventory/${id}`, { method: "DELETE" });
 }
 
+// ---- Waste ----
+
+export function getWaste() {
+    return request("/waste");
+}
+
+export function createWaste(payload) {
+    return request("/waste", { method: "POST", body: payload });
+}
+
 // ---- Staff ----
 
 export function getStaff() {

@@ -265,6 +265,7 @@ class InventoryItemCreate(BaseModel):
         default=Decimal("0"), ge=0, decimal_places=3
     )
     unit_cost: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
+    supplier: str | None = Field(default=None, max_length=150)
 
 
 class InventoryItemUpdate(BaseModel):
@@ -273,6 +274,7 @@ class InventoryItemUpdate(BaseModel):
     quantity: Decimal | None = Field(default=None, ge=0, decimal_places=3)
     reorder_level: Decimal | None = Field(default=None, ge=0, decimal_places=3)
     unit_cost: Decimal | None = Field(default=None, ge=0, decimal_places=2)
+    supplier: str | None = Field(default=None, max_length=150)
 
 
 class InventoryItemResponse(BaseModel):
@@ -282,7 +284,28 @@ class InventoryItemResponse(BaseModel):
     quantity: Decimal
     reorder_level: Decimal
     unit_cost: Decimal
+    supplier: str | None
     updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+# ---- Waste ----
+
+class WasteLogCreate(BaseModel):
+    inventory_item_id: UUID | None = None
+    description: str | None = None
+    quantity: Decimal = Field(gt=0, decimal_places=3)
+
+
+class WasteLogResponse(BaseModel):
+    id: UUID
+    inventory_item_id: UUID | None
+    item_name: str | None = None
+    description: str | None
+    quantity: Decimal
+    cost: Decimal = Decimal("0")
+    created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -348,6 +371,7 @@ class ReportsSummary(BaseModel):
     total_customers: int
     repeat_customers: int
     second_order_rate: float
+    total_waste_value: Decimal
     top_items: list[TopItem]
     low_stock: list[LowStockItem]
 

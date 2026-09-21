@@ -14,6 +14,7 @@ const EMPTY = {
     quantity: "",
     reorder_level: "",
     unit_cost: "",
+    supplier: "",
 };
 
 export default function AdminInventory() {
@@ -42,6 +43,7 @@ export default function AdminInventory() {
             quantity: String(item.quantity),
             reorder_level: String(item.reorder_level),
             unit_cost: String(item.unit_cost),
+            supplier: item.supplier || "",
         });
         setError("");
     }
@@ -62,6 +64,7 @@ export default function AdminInventory() {
             quantity: Number(form.quantity),
             reorder_level: Number(form.reorder_level || 0),
             unit_cost: Number(form.unit_cost || 0),
+            supplier: form.supplier || null,
         };
 
         try {
@@ -161,6 +164,15 @@ export default function AdminInventory() {
                         }
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
+                    <input
+                        type="text"
+                        placeholder="Supplier"
+                        value={form.supplier}
+                        onChange={(e) =>
+                            setForm({ ...form, supplier: e.target.value })
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
 
                     {error && <p className="text-red-600 text-sm">{error}</p>}
 
@@ -204,6 +216,7 @@ export default function AdminInventory() {
                                     {item.unit} · reorder at{" "}
                                     {Number(item.reorder_level).toFixed(0)} · Rs.{" "}
                                     {Number(item.unit_cost).toFixed(0)}/{item.unit}
+                                    {item.supplier ? ` · ${item.supplier}` : ""}
                                 </p>
                             </div>
                             <div className="flex gap-2 shrink-0">

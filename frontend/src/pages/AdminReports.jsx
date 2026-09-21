@@ -71,6 +71,12 @@ export default function AdminReports() {
                                 label="Second-order rate"
                                 value={`${data.second_order_rate}%`}
                             />
+                            <Stat
+                                label="Waste value"
+                                value={`Rs. ${Number(
+                                    data.total_waste_value
+                                ).toFixed(0)}`}
+                            />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">

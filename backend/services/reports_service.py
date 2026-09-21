@@ -91,6 +91,8 @@ def get_summary(db: Session) -> dict:
         else 0.0
     )
 
+    from services.waste_service import total_waste_value
+
     return {
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
@@ -99,6 +101,7 @@ def get_summary(db: Session) -> dict:
         "total_customers": total_customers,
         "repeat_customers": repeat_customers,
         "second_order_rate": second_order_rate,
+        "total_waste_value": total_waste_value(db),
         "top_items": top_items,
         "low_stock": low_stock,
     }
