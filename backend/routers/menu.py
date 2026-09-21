@@ -15,6 +15,7 @@ from services.menu_service import (
     delete_menu_item,
     get_menu_item,
     get_menu_items,
+    get_todays_menu,
     update_menu_item,
 )
 
@@ -33,6 +34,16 @@ def read_menu(
     db: Session = Depends(get_db),
 ):
     return get_menu_items(db)
+
+
+@router.get(
+    "/today",
+    response_model=list[MenuItemResponse],
+)
+def read_todays_menu(
+    db: Session = Depends(get_db),
+):
+    return get_todays_menu(db)
 
 
 @router.get(

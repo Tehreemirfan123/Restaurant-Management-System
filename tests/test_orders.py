@@ -149,3 +149,90 @@ def test_dine_in_requires_table(client, auth_headers):
     )
 
     assert response.status_code == 400
+
+
+# Delivery order adds the delivery fee and needs an address
+def test_delivery_order_adds_fee(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Delivery Dish",
+            "description": None,
+            "price": 200,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "delivery",
+            "delivery_address": "123 Al Hamad Road, Lahore",
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 1}],
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["order_type"] == "delivery"
+    assert data["delivery_fee"] == "80.00"
+    # 200 item + 80 delivery
+    assert data["total_amount"] == "280.00"
+    assert data["delivery_address"] == "123 Al Hamad Road, Lahore"
+
+
+def test_delivery_requires_address(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Delivery Dish No Address",
+            "description": None,
+            "price": 200,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "delivery",
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 1}],
+        },
+    )
+
+    assert response.status_code == 400
+
+
+def test_pickup_order_has_no_fee(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Pickup Dish",
+            "description": None,
+            "price": 200,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "pickup",
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 1}],
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert data["order_type"] == "pickup"
+    assert data["delivery_fee"] == "0.00"
+    assert data["total_amount"] == "200.00"

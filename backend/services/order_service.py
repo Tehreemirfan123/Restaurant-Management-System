@@ -1,9 +1,11 @@
+from decimal import Decimal
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from core.config import DELIVERY_FEE
 from models.models import (
     Customer,
     MenuItem,
@@ -61,6 +63,16 @@ def create_order(
             detail="A dine-in order requires a table",
         )
 
+    # A delivery order needs an address and carries the flat delivery fee.
+    delivery_fee = Decimal("0")
+    if order_data.order_type == OrderTypeEnum.delivery:
+        if not order_data.delivery_address:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="A delivery order requires a delivery address",
+            )
+        delivery_fee = DELIVERY_FEE
+
     if order_data.customer_id is not None:
         customer = db.get(Customer, order_data.customer_id)
         if customer is None:
@@ -72,6 +84,8 @@ def create_order(
     order = Order(
         total_amount=0,
         order_type=order_data.order_type,
+        delivery_fee=delivery_fee,
+        delivery_address=order_data.delivery_address,
         table_id=order_data.table_id,
         customer_id=order_data.customer_id,
     )
@@ -111,7 +125,7 @@ def create_order(
 
         total_amount += subtotal
 
-    order.total_amount = total_amount
+    order.total_amount = total_amount + delivery_fee
 
     db.commit()
     db.refresh(order)

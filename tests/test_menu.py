@@ -98,3 +98,36 @@ def test_create_menu_item_rejects_invalid_category(client, auth_headers):
     )
 
     assert response.status_code == 422
+
+
+# Today's menu returns the day's dish plus day-agnostic specials
+def test_todays_menu_filters_by_day(client, auth_headers):
+    import datetime
+
+    today = datetime.datetime.now(datetime.timezone.utc).strftime("%A").lower()
+    other = "monday" if today != "monday" else "tuesday"
+
+    # A dish for today, a dish for another day, and a day-agnostic special.
+    client.post("/menu", headers=auth_headers, json={
+        "name": "Todays Special Dish", "description": None, "price": 250,
+        "category": "mains", "day_of_week": today,
+        "image_url": None, "available": True,
+    })
+    client.post("/menu", headers=auth_headers, json={
+        "name": "Other Day Dish", "description": None, "price": 250,
+        "category": "mains", "day_of_week": other,
+        "image_url": None, "available": True,
+    })
+    client.post("/menu", headers=auth_headers, json={
+        "name": "Anyday Special", "description": None, "price": 700,
+        "category": "mains", "day_of_week": None,
+        "image_url": None, "available": True,
+    })
+
+    response = client.get("/menu/today")
+    assert response.status_code == 200
+
+    names = [i["name"] for i in response.json()]
+    assert "Todays Special Dish" in names
+    assert "Anyday Special" in names
+    assert "Other Day Dish" not in names

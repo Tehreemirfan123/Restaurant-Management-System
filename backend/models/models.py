@@ -57,8 +57,22 @@ class TableStatusEnum(str, enum.Enum):
 
 
 class OrderTypeEnum(str, enum.Enum):
+    # pickup/delivery are the live fulfilment types for the home kitchen.
+    # dine_in/takeaway are kept for backwards compatibility but hidden in the UI.
+    pickup = "pickup"
+    delivery = "delivery"
     dine_in = "dine_in"
     takeaway = "takeaway"
+
+
+class DayOfWeekEnum(str, enum.Enum):
+    monday = "monday"
+    tuesday = "tuesday"
+    wednesday = "wednesday"
+    thursday = "thursday"
+    friday = "friday"
+    saturday = "saturday"
+    sunday = "sunday"
 
 
 class Staff(Base):
@@ -135,6 +149,13 @@ class MenuItem(Base):
         nullable=False,
     )
 
+    # The day this dish is served on the rotating weekly menu.
+    # Null means it's available any day (e.g. advance-order specials).
+    day_of_week: Mapped[DayOfWeekEnum | None] = mapped_column(
+        Enum(DayOfWeekEnum),
+        nullable=True,
+    )
+
     image_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
@@ -168,13 +189,24 @@ class Order(Base):
 
     order_type: Mapped[OrderTypeEnum] = mapped_column(
         Enum(OrderTypeEnum),
-        default=OrderTypeEnum.takeaway,
+        default=OrderTypeEnum.pickup,
         nullable=False,
     )
 
     total_amount: Mapped[Decimal] = mapped_column(
         Numeric(10, 2),
         nullable=False,
+    )
+
+    delivery_fee: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0"),
+        nullable=False,
+    )
+
+    delivery_address: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
     )
 
     table_id: Mapped[UUID | None] = mapped_column(
@@ -316,6 +348,11 @@ class Customer(Base):
 
     email: Mapped[str | None] = mapped_column(
         String(255),
+        nullable=True,
+    )
+
+    address: Mapped[str | None] = mapped_column(
+        Text,
         nullable=True,
     )
 

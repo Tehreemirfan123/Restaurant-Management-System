@@ -1,4 +1,5 @@
 import os
+from decimal import Decimal
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -19,3 +20,7 @@ JWT_ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "480")
 )
+
+# Flat delivery fee (Rs.) added to delivery orders. Matches the brochure's
+# "Delivery: Rs. 80 within 3 km".
+DELIVERY_FEE = Decimal(os.getenv("DELIVERY_FEE", "80"))

@@ -1,13 +1,25 @@
+from datetime import datetime, timezone
 from uuid import UUID
 
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from models.models import MenuItem
+from models.models import DayOfWeekEnum, MenuItem
 from schemas.schemas import (
     MenuItemCreate,
     MenuItemUpdate,
 )
+
+# Python's weekday() (Mon=0 .. Sun=6) mapped to our enum.
+_WEEKDAYS = [
+    DayOfWeekEnum.monday,
+    DayOfWeekEnum.tuesday,
+    DayOfWeekEnum.wednesday,
+    DayOfWeekEnum.thursday,
+    DayOfWeekEnum.friday,
+    DayOfWeekEnum.saturday,
+    DayOfWeekEnum.sunday,
+]
 
 
 def get_menu_items(
@@ -16,6 +28,26 @@ def get_menu_items(
     return list(
         db.scalars(
             select(MenuItem)
+            .order_by(MenuItem.name)
+        ).all()
+    )
+
+
+def get_todays_menu(
+    db: Session,
+) -> list[MenuItem]:
+    """Available dishes for today: the day's rotating dish plus any
+    day-agnostic items (specials with no set day)."""
+    today = _WEEKDAYS[datetime.now(timezone.utc).weekday()]
+
+    return list(
+        db.scalars(
+            select(MenuItem)
+            .where(
+                MenuItem.available.is_(True),
+                (MenuItem.day_of_week == today)
+                | (MenuItem.day_of_week.is_(None)),
+            )
             .order_by(MenuItem.name)
         ).all()
     )

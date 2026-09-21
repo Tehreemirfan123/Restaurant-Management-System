@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from models.models import (
     CategoryEnum,
+    DayOfWeekEnum,
     OrderStatusEnum,
     OrderTypeEnum,
     PaymentMethodEnum,
@@ -29,6 +30,8 @@ class MenuItemCreate(BaseModel):
 
     category: CategoryEnum
 
+    day_of_week: DayOfWeekEnum | None = None
+
     image_url: str | None = None
 
     available: bool = True
@@ -51,6 +54,8 @@ class MenuItemUpdate(BaseModel):
 
     category: CategoryEnum | None = None
 
+    day_of_week: DayOfWeekEnum | None = None
+
     image_url: str | None = None
 
     available: bool | None = None
@@ -62,6 +67,7 @@ class MenuItemResponse(BaseModel):
     description: str | None
     price: Decimal
     category: CategoryEnum
+    day_of_week: DayOfWeekEnum | None
     image_url: str | None
     available: bool
 
@@ -80,7 +86,10 @@ class OrderCreate(BaseModel):
         min_length=1,
     )
 
-    order_type: OrderTypeEnum = OrderTypeEnum.takeaway
+    order_type: OrderTypeEnum = OrderTypeEnum.pickup
+
+    # Required when order_type is delivery (validated in the service).
+    delivery_address: str | None = None
 
     table_id: UUID | None = None
 
@@ -103,6 +112,8 @@ class OrderResponse(BaseModel):
     status: OrderStatusEnum
     order_type: OrderTypeEnum
     total_amount: Decimal
+    delivery_fee: Decimal
+    delivery_address: str | None
     table_id: UUID | None
     customer_id: UUID | None
     created_at: datetime
@@ -184,12 +195,14 @@ class CustomerCreate(BaseModel):
     name: str = Field(min_length=1, max_length=150)
     phone: str | None = Field(default=None, max_length=30)
     email: str | None = Field(default=None, max_length=255)
+    address: str | None = None
 
 
 class CustomerUpdate(BaseModel):
     name: str | None = Field(default=None, min_length=1, max_length=150)
     phone: str | None = Field(default=None, max_length=30)
     email: str | None = Field(default=None, max_length=255)
+    address: str | None = None
 
 
 class CustomerResponse(BaseModel):
@@ -197,6 +210,7 @@ class CustomerResponse(BaseModel):
     name: str
     phone: str | None
     email: str | None
+    address: str | None
     created_at: datetime
 
     model_config = ConfigDict(from_attributes=True)

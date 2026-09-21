@@ -10,9 +10,10 @@ existing rows are left untouched.
 
 import os
 
-from database.database import Base, SessionLocal, engine
+from database.database import SessionLocal
 from models.models import (
     CategoryEnum,
+    DayOfWeekEnum,
     InventoryItem,
     MenuItem,
     RoleEnum,
@@ -26,12 +27,17 @@ from services.staff_service import (
 )
 
 
+# The real rotating weekly menu (name, description, price, category, day).
+# A null day means it's available any day (advance-order special).
 SAMPLE_MENU = [
-    ("Chicken Biryani", "Traditional spicy chicken biryani with raita", 350, CategoryEnum.mains),
-    ("Beef Burger", "Juicy beef burger with fries", 500, CategoryEnum.mains),
-    ("Spring Rolls", "Crispy vegetable spring rolls", 200, CategoryEnum.starters),
-    ("Gulab Jamun", "Warm syrup-soaked dessert", 150, CategoryEnum.desserts),
-    ("Fresh Lime Soda", "Chilled sweet-and-salty lime soda", 120, CategoryEnum.drinks),
+    ("Channa Pilao", "Channa pilao with raita and salad", 300, CategoryEnum.mains, DayOfWeekEnum.friday),
+    ("Chicken Nihari", "Special slow-cooked chicken nihari", 260, CategoryEnum.mains, DayOfWeekEnum.saturday),
+    ("Chicken Biryani", "Traditional spicy chicken biryani", 320, CategoryEnum.mains, DayOfWeekEnum.sunday),
+    ("Ghoota Daal (Chicken)", "Ghoota daal with chicken, served with chawal", 270, CategoryEnum.mains, DayOfWeekEnum.monday),
+    ("Sabzi / Daal", "Sabzi, daal mash or daal channa fry", 160, CategoryEnum.mains, DayOfWeekEnum.tuesday),
+    ("Chicken White Karahi", "Creamy chicken white karahi", 230, CategoryEnum.mains, DayOfWeekEnum.wednesday),
+    ("Karri Pakora", "Karri pakora with 2 roti / masar chawal", 220, CategoryEnum.mains, DayOfWeekEnum.thursday),
+    ("Mutton Kunna", "Available on advance order. Ask for details.", 700, CategoryEnum.mains, None),
 ]
 
 # (number, capacity)
@@ -48,8 +54,7 @@ SAMPLE_INVENTORY = [
 
 
 def seed():
-    Base.metadata.create_all(bind=engine)
-
+    # The schema is owned by Alembic; run `alembic upgrade head` first.
     db = SessionLocal()
 
     try:
@@ -71,13 +76,14 @@ def seed():
             print(f"Admin user '{username}' already exists, skipping.")
 
         if db.query(MenuItem).count() == 0:
-            for name, desc, price, category in SAMPLE_MENU:
+            for name, desc, price, category, day in SAMPLE_MENU:
                 db.add(
                     MenuItem(
                         name=name,
                         description=desc,
                         price=price,
                         category=category,
+                        day_of_week=day,
                         available=True,
                     )
                 )
