@@ -38,6 +38,7 @@ def test_create_payment(client, auth_headers):
 
     response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": order["id"],
             "method": "cash",
@@ -60,6 +61,7 @@ def test_payment_uses_order_total(client, auth_headers):
 
     response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": order["id"],
             "method": "card",
@@ -73,9 +75,10 @@ def test_payment_uses_order_total(client, auth_headers):
     assert data["amount"] == order["total_amount"]
 
 
-def test_payment_order_not_found(client):
+def test_payment_order_not_found(client, auth_headers):
     response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": "00000000-0000-0000-0000-000000000000",
             "method": "cash",
@@ -91,6 +94,7 @@ def test_payment_already_exists(client, auth_headers):
 
     first_response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": order["id"],
             "method": "cash",
@@ -101,6 +105,7 @@ def test_payment_already_exists(client, auth_headers):
 
     second_response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": order["id"],
             "method": "card",
@@ -119,6 +124,7 @@ def test_get_payment(client, auth_headers):
 
     create_response = client.post(
         "/payments",
+        headers=auth_headers,
         json={
             "order_id": order["id"],
             "method": "cash",
@@ -128,7 +134,8 @@ def test_get_payment(client, auth_headers):
     payment = create_response.json()
 
     response = client.get(
-        f"/payments/{payment['id']}"
+        f"/payments/{payment['id']}",
+        headers=auth_headers,
     )
 
     assert response.status_code == 200
@@ -142,10 +149,21 @@ def test_get_payment(client, auth_headers):
     assert data["status"] == "paid"
 
 
-def test_get_payment_not_found(client):
+def test_get_payment_not_found(client, auth_headers):
     response = client.get(
-        "/payments/00000000-0000-0000-0000-000000000000"
+        "/payments/00000000-0000-0000-0000-000000000000",
+        headers=auth_headers,
     )
 
     assert response.status_code == 404
     assert response.json()["detail"] == "Payment not found"
+
+def test_payment_requires_auth(client):
+    response = client.post(
+        "/payments",
+        json={
+            "order_id": "00000000-0000-0000-0000-000000000000",
+            "method": "cash",
+        },
+    )
+    assert response.status_code == 401

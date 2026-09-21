@@ -27,7 +27,11 @@ def test_cancel_requires_auth(client, auth_headers):
 
 def test_cancel_refunds_paid_order(client, auth_headers):
     order = _order(client, auth_headers)
-    client.post("/payments", json={"order_id": order["id"], "method": "cash"})
+    client.post(
+        "/payments",
+        headers=auth_headers,
+        json={"order_id": order["id"], "method": "cash"},
+    )
 
     resp = client.post(
         f"/orders/{order['id']}/cancel", headers=auth_headers
@@ -41,6 +45,7 @@ def test_advance_payment_records_partial_amount(client, auth_headers):
     order = _order(client, auth_headers, qty=2)  # total 400
     resp = client.post(
         "/payments",
+        headers=auth_headers,
         json={"order_id": order["id"], "method": "jazzcash", "amount": 200},
     )
     assert resp.status_code == 201

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database.database import get_db
+from dependencies.auth import get_current_staff
 from schemas.schemas import (
     PaymentCreate,
     PaymentResponse,
@@ -17,6 +18,7 @@ from services.payment_service import (
 router = APIRouter(
     prefix="/payments",
     tags=["Payments"],
+    dependencies=[Depends(get_current_staff)],
 )
 
 
