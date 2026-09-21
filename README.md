@@ -32,14 +32,31 @@ pip install -r requirements.txt
 
 Copy `.env.example` to `.env` and set your values (database URLs, `SECRET_KEY`).
 
-Create the initial admin and sample menu data:
+Create the database tables by running the migrations (from `backend/`):
 
 ```bash
 cd backend
+alembic upgrade head
+```
+
+Then create the initial admin and sample data:
+
+```bash
 python seed.py
 ```
 
 Default admin credentials (change via `.env`): `admin` / `admin123`
+
+### Changing the schema later
+
+The schema is managed by Alembic — the app does not auto-create tables.
+After editing the models, generate and apply a migration:
+
+```bash
+cd backend
+alembic revision --autogenerate -m "describe the change"
+alembic upgrade head
+```
 
 Run the API (from the `backend/` directory):
 
@@ -61,10 +78,10 @@ npm run dev
 
 App runs at http://localhost:5173
 
-- `/` — public customer menu
+- `/` — public customer menu, cart, and order tracking
 - `/login` — staff/admin login
-- `/staff` — staff dashboard (requires login)
-- `/admin` — admin dashboard (requires admin role)
+- `/staff` — staff dashboard: POS, kitchen, tables (requires login)
+- `/admin` — admin dashboard: menu, inventory, staff, reports (admin only)
 
 ## Tests
 
@@ -82,15 +99,18 @@ backend/
   database/     # engine, session, Base
   dependencies/ # auth dependencies (current user, role guards)
   models/       # SQLAlchemy models
-  routers/      # API endpoints (auth, menu, orders, payments)
+  routers/      # API endpoints (auth, menu, orders, payments, tables,
+                #   customers, inventory, recipes, reports)
   schemas/      # Pydantic request/response models
   services/     # business logic
+  migrations/   # Alembic migration scripts
+  alembic.ini   # Alembic config
   seed.py       # bootstrap admin + sample data
 frontend/
   src/
-    components/ # ProtectedRoute, StaffHeader
-    context/    # AuthContext
-    pages/      # Login, CustomerMenu, StaffDashboard, AdminDashboard
+    components/ # ProtectedRoute, StaffHeader, CustomerHeader
+    context/    # AuthContext, CartContext
+    pages/      # customer, staff (POS/Kitchen/Tables) and admin screens
     services/   # api.js (fetch client + auth)
 tests/          # pytest suite
 ```

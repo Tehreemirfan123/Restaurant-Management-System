@@ -1,14 +1,8 @@
-from contextlib import asynccontextmanager
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy import text
 
-from database.database import Base, engine
-
-# Import models so their tables are registered on Base.metadata
-# before create_all runs.
-from models import models  # noqa: F401
+from database.database import engine
 from routers.auth import router as auth_router
 from routers.customers import router as customers_router
 from routers.inventory import router as inventory_router
@@ -20,18 +14,11 @@ from routers.reports import router as reports_router
 from routers.tables import router as tables_router
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    # Create any missing tables at startup. For schema changes over time,
-    # switch to Alembic migrations (alembic is already in requirements).
-    Base.metadata.create_all(bind=engine)
-    yield
-
-
+# The database schema is managed by Alembic migrations, not create_all.
+# Run `alembic upgrade head` before starting the app on a fresh database.
 app = FastAPI(
     title="Restaurant Management System API",
     version="1.0.0",
-    lifespan=lifespan,
 )
 
 
