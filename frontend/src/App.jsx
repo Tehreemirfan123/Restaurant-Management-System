@@ -5,6 +5,7 @@ import AdminCustomers from "./pages/AdminCustomers";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
+import AdminRecipesPage from "./pages/AdminRecipes";
 import AdminReports from "./pages/AdminReports";
 import AdminStaff from "./pages/AdminStaff";
 import Cart from "./pages/Cart";
@@ -81,6 +82,14 @@ function App() {
                 element={
                     <ProtectedRoute adminOnly>
                         <AdminInventory />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/recipes"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminRecipesPage />
                     </ProtectedRoute>
                 }
             />

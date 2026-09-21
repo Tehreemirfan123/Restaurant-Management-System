@@ -8,7 +8,13 @@ import {
     updateInventoryItem,
 } from "../services/api";
 
-const EMPTY = { name: "", unit: "", quantity: "", reorder_level: "" };
+const EMPTY = {
+    name: "",
+    unit: "",
+    quantity: "",
+    reorder_level: "",
+    unit_cost: "",
+};
 
 export default function AdminInventory() {
     const [items, setItems] = useState([]);
@@ -35,6 +41,7 @@ export default function AdminInventory() {
             unit: item.unit,
             quantity: String(item.quantity),
             reorder_level: String(item.reorder_level),
+            unit_cost: String(item.unit_cost),
         });
         setError("");
     }
@@ -54,6 +61,7 @@ export default function AdminInventory() {
             unit: form.unit,
             quantity: Number(form.quantity),
             reorder_level: Number(form.reorder_level || 0),
+            unit_cost: Number(form.unit_cost || 0),
         };
 
         try {
@@ -142,6 +150,17 @@ export default function AdminInventory() {
                         }
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
                     />
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Cost per unit (Rs.)"
+                        value={form.unit_cost}
+                        onChange={(e) =>
+                            setForm({ ...form, unit_cost: e.target.value })
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
 
                     {error && <p className="text-red-600 text-sm">{error}</p>}
 
@@ -183,7 +202,8 @@ export default function AdminInventory() {
                                 <p className="text-sm text-gray-500">
                                     {Number(item.quantity).toFixed(0)}{" "}
                                     {item.unit} · reorder at{" "}
-                                    {Number(item.reorder_level).toFixed(0)}
+                                    {Number(item.reorder_level).toFixed(0)} · Rs.{" "}
+                                    {Number(item.unit_cost).toFixed(0)}/{item.unit}
                                 </p>
                             </div>
                             <div className="flex gap-2 shrink-0">

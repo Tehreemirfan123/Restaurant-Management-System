@@ -164,6 +164,13 @@ class MenuItem(Base):
         nullable=True,
     )
 
+    # Per-order packaging (+ other flat) cost, used in contribution costing.
+    packaging_cost: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("0"),
+        nullable=False,
+    )
+
     image_url: Mapped[str | None] = mapped_column(
         String(500),
         nullable=True,
@@ -438,6 +445,13 @@ class InventoryItem(Base):
 
     reorder_level: Mapped[Decimal] = mapped_column(
         Numeric(10, 3),
+        default=Decimal("0"),
+        nullable=False,
+    )
+
+    # Cost per unit (Rs. per kg/litre/piece), used for dish costing.
+    unit_cost: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
         default=Decimal("0"),
         nullable=False,
     )

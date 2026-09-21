@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session
 
 from database.database import get_db
 from dependencies.auth import require_admin
-from schemas.schemas import ReportsSummary
-from services.reports_service import get_summary
+from schemas.schemas import DishCosting, ReportsSummary
+from services.reports_service import get_costing, get_summary
 
 
 router = APIRouter(
@@ -17,3 +17,8 @@ router = APIRouter(
 @router.get("/summary", response_model=ReportsSummary)
 def read_summary(db: Session = Depends(get_db)):
     return get_summary(db)
+
+
+@router.get("/costing", response_model=list[DishCosting])
+def read_costing(db: Session = Depends(get_db)):
+    return get_costing(db)

@@ -26,6 +26,7 @@ const EMPTY = {
     price: "",
     category: "mains",
     day_of_week: "",
+    packaging_cost: "",
     available: true,
 };
 
@@ -53,6 +54,7 @@ export default function AdminMenu() {
             price: String(item.price),
             category: item.category,
             day_of_week: item.day_of_week || "",
+            packaging_cost: String(item.packaging_cost ?? ""),
             available: item.available,
         });
         setError("");
@@ -74,6 +76,7 @@ export default function AdminMenu() {
             price: Number(form.price),
             category: form.category,
             day_of_week: form.day_of_week || null,
+            packaging_cost: Number(form.packaging_cost || 0),
             available: form.available,
         };
 
@@ -171,6 +174,20 @@ export default function AdminMenu() {
                             </option>
                         ))}
                     </select>
+                    <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="Packaging cost (Rs.)"
+                        value={form.packaging_cost}
+                        onChange={(e) =>
+                            setForm({
+                                ...form,
+                                packaging_cost: e.target.value,
+                            })
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                    />
                     <label className="flex items-center gap-2 text-sm text-gray-700">
                         <input
                             type="checkbox"

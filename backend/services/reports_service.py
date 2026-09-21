@@ -3,6 +3,8 @@ from datetime import datetime, timezone
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from decimal import Decimal
+
 from models.models import (
     InventoryItem,
     MenuItem,
@@ -10,6 +12,8 @@ from models.models import (
     OrderItem,
     Payment,
     PaymentStatusEnum,
+    Recipe,
+    RecipeIngredient,
 )
 
 
@@ -98,3 +102,64 @@ def get_summary(db: Session) -> dict:
         "top_items": top_items,
         "low_stock": low_stock,
     }
+
+
+def get_costing(db: Session) -> list[dict]:
+    """Per-dish variable cost and contribution.
+
+    ingredient cost (from the recipe x inventory unit costs) + packaging cost
+    = variable cost; price - variable cost = contribution.
+    """
+    # Ingredient cost per recipe's menu item.
+    rows = db.execute(
+        select(
+            Recipe.menu_item_id,
+            func.coalesce(
+                func.sum(RecipeIngredient.quantity * InventoryItem.unit_cost),
+                0,
+            ),
+        )
+        .join(RecipeIngredient, RecipeIngredient.recipe_id == Recipe.id)
+        .join(
+            InventoryItem,
+            InventoryItem.id == RecipeIngredient.inventory_item_id,
+        )
+        .group_by(Recipe.menu_item_id)
+    ).all()
+    ingredient_cost_by_item = {mid: cost for mid, cost in rows}
+
+    recipe_item_ids = set(
+        db.scalars(select(Recipe.menu_item_id)).all()
+    )
+
+    menu_items = db.scalars(
+        select(MenuItem).order_by(MenuItem.name)
+    ).all()
+
+    result = []
+    for item in menu_items:
+        ingredient_cost = Decimal(
+            ingredient_cost_by_item.get(item.id, 0)
+        )
+        packaging_cost = item.packaging_cost or Decimal("0")
+        variable_cost = ingredient_cost + packaging_cost
+        contribution = item.price - variable_cost
+        margin = (
+            round(float(contribution / item.price) * 100, 1)
+            if item.price
+            else 0.0
+        )
+        result.append(
+            {
+                "menu_item_id": item.id,
+                "name": item.name,
+                "price": item.price,
+                "ingredient_cost": ingredient_cost,
+                "packaging_cost": packaging_cost,
+                "variable_cost": variable_cost,
+                "contribution": contribution,
+                "margin_percent": margin,
+                "has_recipe": item.id in recipe_item_ids,
+            }
+        )
+    return result

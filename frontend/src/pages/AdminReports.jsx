@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import StaffHeader from "../components/StaffHeader";
-import { getReportsSummary } from "../services/api";
+import { getReportsCosting, getReportsSummary } from "../services/api";
 
 function Stat({ label, value }) {
     return (
@@ -14,6 +14,7 @@ function Stat({ label, value }) {
 
 export default function AdminReports() {
     const [data, setData] = useState(null);
+    const [costing, setCosting] = useState([]);
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
 
@@ -22,6 +23,9 @@ export default function AdminReports() {
             .then(setData)
             .catch((err) => setError(err.message || "Failed to load reports"))
             .finally(() => setLoading(false));
+        getReportsCosting()
+            .then((rows) => setCosting(rows || []))
+            .catch(() => {});
     }, []);
 
     return (
@@ -125,6 +129,79 @@ export default function AdminReports() {
                                         ))}
                                     </ul>
                                 )}
+                            </div>
+                        </div>
+
+                        {/* Dish costing & contribution */}
+                        <div className="bg-white rounded-xl shadow-sm p-5 mt-4">
+                            <h2 className="font-semibold text-gray-800 mb-1">
+                                Dish costing &amp; contribution
+                            </h2>
+                            <p className="text-xs text-gray-400 mb-3">
+                                Contribution = price − ingredient cost −
+                                packaging. Add recipes and ingredient costs for
+                                accurate numbers.
+                            </p>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="text-left text-gray-500 border-b">
+                                            <th className="py-2 pr-2">Dish</th>
+                                            <th className="py-2 px-2 text-right">
+                                                Price
+                                            </th>
+                                            <th className="py-2 px-2 text-right">
+                                                Cost
+                                            </th>
+                                            <th className="py-2 px-2 text-right">
+                                                Contribution
+                                            </th>
+                                            <th className="py-2 pl-2 text-right">
+                                                Margin
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {costing.map((c) => (
+                                            <tr
+                                                key={c.menu_item_id}
+                                                className="border-b last:border-0"
+                                            >
+                                                <td className="py-2 pr-2 text-gray-800">
+                                                    {c.name}
+                                                    {!c.has_recipe && (
+                                                        <span className="ml-1 text-xs text-amber-600">
+                                                            (no recipe)
+                                                        </span>
+                                                    )}
+                                                </td>
+                                                <td className="py-2 px-2 text-right text-gray-600">
+                                                    {Number(c.price).toFixed(0)}
+                                                </td>
+                                                <td className="py-2 px-2 text-right text-gray-600">
+                                                    {Number(
+                                                        c.variable_cost
+                                                    ).toFixed(0)}
+                                                </td>
+                                                <td
+                                                    className={`py-2 px-2 text-right font-medium ${
+                                                        Number(c.contribution) <
+                                                        0
+                                                            ? "text-red-600"
+                                                            : "text-green-700"
+                                                    }`}
+                                                >
+                                                    {Number(
+                                                        c.contribution
+                                                    ).toFixed(0)}
+                                                </td>
+                                                <td className="py-2 pl-2 text-right text-gray-500">
+                                                    {c.margin_percent}%
+                                                </td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </>

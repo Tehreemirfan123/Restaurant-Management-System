@@ -33,6 +33,8 @@ class MenuItemCreate(BaseModel):
 
     day_of_week: DayOfWeekEnum | None = None
 
+    packaging_cost: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
+
     image_url: str | None = None
 
     available: bool = True
@@ -57,6 +59,8 @@ class MenuItemUpdate(BaseModel):
 
     day_of_week: DayOfWeekEnum | None = None
 
+    packaging_cost: Decimal | None = Field(default=None, ge=0, decimal_places=2)
+
     image_url: str | None = None
 
     available: bool | None = None
@@ -69,6 +73,7 @@ class MenuItemResponse(BaseModel):
     price: Decimal
     category: CategoryEnum
     day_of_week: DayOfWeekEnum | None
+    packaging_cost: Decimal
     image_url: str | None
     available: bool
 
@@ -259,6 +264,7 @@ class InventoryItemCreate(BaseModel):
     reorder_level: Decimal = Field(
         default=Decimal("0"), ge=0, decimal_places=3
     )
+    unit_cost: Decimal = Field(default=Decimal("0"), ge=0, decimal_places=2)
 
 
 class InventoryItemUpdate(BaseModel):
@@ -266,6 +272,7 @@ class InventoryItemUpdate(BaseModel):
     unit: str | None = Field(default=None, min_length=1, max_length=30)
     quantity: Decimal | None = Field(default=None, ge=0, decimal_places=3)
     reorder_level: Decimal | None = Field(default=None, ge=0, decimal_places=3)
+    unit_cost: Decimal | None = Field(default=None, ge=0, decimal_places=2)
 
 
 class InventoryItemResponse(BaseModel):
@@ -274,6 +281,7 @@ class InventoryItemResponse(BaseModel):
     unit: str
     quantity: Decimal
     reorder_level: Decimal
+    unit_cost: Decimal
     updated_at: datetime
 
     model_config = ConfigDict(from_attributes=True)
@@ -342,3 +350,15 @@ class ReportsSummary(BaseModel):
     second_order_rate: float
     top_items: list[TopItem]
     low_stock: list[LowStockItem]
+
+
+class DishCosting(BaseModel):
+    menu_item_id: UUID
+    name: str
+    price: Decimal
+    ingredient_cost: Decimal
+    packaging_cost: Decimal
+    variable_cost: Decimal
+    contribution: Decimal
+    margin_percent: float
+    has_recipe: bool

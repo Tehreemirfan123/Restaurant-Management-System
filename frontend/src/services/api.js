@@ -193,10 +193,32 @@ export function createStaff(payload) {
     return request("/auth/staff", { method: "POST", body: payload });
 }
 
+// ---- Recipes ----
+
+export function getRecipes() {
+    return request("/recipes");
+}
+
+export function createRecipe(payload) {
+    return request("/recipes", { method: "POST", body: payload });
+}
+
+export function updateRecipe(id, payload) {
+    return request(`/recipes/${id}`, { method: "PUT", body: payload });
+}
+
+export function deleteRecipe(id) {
+    return request(`/recipes/${id}`, { method: "DELETE" });
+}
+
 // ---- Reports ----
 
 export function getReportsSummary() {
     return request("/reports/summary");
+}
+
+export function getReportsCosting() {
+    return request("/reports/costing");
 }
 
 // ---- Payments ----

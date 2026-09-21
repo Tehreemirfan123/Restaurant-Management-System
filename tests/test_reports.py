@@ -56,3 +56,49 @@ def test_reports_reflect_activity(client, auth_headers):
     assert data["total_orders"] >= 1
     names = [t["name"] for t in data["top_items"]]
     assert "Report Test Dish" in names
+
+
+def test_costing_reflects_recipe_and_costs(client, auth_headers):
+    # Inventory item with a unit cost.
+    inv = client.post(
+        "/inventory",
+        headers=auth_headers,
+        json={"name": "Costing Rice", "unit": "kg", "quantity": 100, "unit_cost": 200},
+    ).json()
+
+    # Dish priced 300 with Rs.30 packaging.
+    dish = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Costing Dish",
+            "description": None,
+            "price": 300,
+            "category": "mains",
+            "packaging_cost": 30,
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    # Recipe uses 0.5 kg rice -> ingredient cost 100.
+    client.post(
+        "/recipes",
+        headers=auth_headers,
+        json={
+            "menu_item_id": dish["id"],
+            "ingredients": [
+                {"inventory_item_id": inv["id"], "quantity": 0.5}
+            ],
+        },
+    )
+
+    rows = client.get("/reports/costing", headers=auth_headers).json()
+    row = next(r for r in rows if r["menu_item_id"] == dish["id"])
+
+    assert float(row["ingredient_cost"]) == 100
+    assert float(row["packaging_cost"]) == 30
+    assert float(row["variable_cost"]) == 130
+    # 300 - 130 = 170
+    assert float(row["contribution"]) == 170
+    assert row["has_recipe"] is True
