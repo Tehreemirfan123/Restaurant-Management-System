@@ -1,7 +1,8 @@
 # Create Order
-def test_create_order(client):
+def test_create_order(client, auth_headers):
     menu_response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Chicken Biryani",
             "description": "Chicken biryani",
@@ -53,9 +54,10 @@ def test_create_order_with_invalid_menu_item(client):
     assert response.status_code == 404
 
 # Unavailable Menu Item
-def test_create_order_with_unavailable_item(client):
+def test_create_order_with_unavailable_item(client, auth_headers):
     menu_response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Unavailable Burger",
             "description": None,
@@ -86,6 +88,7 @@ def test_create_order_with_unavailable_item(client):
 def test_create_dine_in_order_with_table(client, auth_headers):
     menu_item = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Seekh Kebab",
             "description": None,
@@ -121,9 +124,10 @@ def test_create_dine_in_order_with_table(client, auth_headers):
 
 
 # Dine-in without a table should be rejected
-def test_dine_in_requires_table(client):
+def test_dine_in_requires_table(client, auth_headers):
     menu_item = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Naan",
             "description": None,

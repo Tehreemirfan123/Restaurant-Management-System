@@ -1,6 +1,7 @@
-def _make_menu_item(client, name="Karahi"):
+def _make_menu_item(client, auth_headers, name="Karahi"):
     return client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": name,
             "description": None,
@@ -21,7 +22,7 @@ def _make_inventory_item(client, auth_headers, name):
 
 
 def test_create_recipe_with_ingredients(client, auth_headers):
-    menu_item = _make_menu_item(client, "Karahi")
+    menu_item = _make_menu_item(client, auth_headers, "Karahi")
     chicken = _make_inventory_item(client, auth_headers, "Chicken")
     tomato = _make_inventory_item(client, auth_headers, "Tomato")
 
@@ -45,7 +46,7 @@ def test_create_recipe_with_ingredients(client, auth_headers):
 
 
 def test_recipe_rejects_duplicate_menu_item(client, auth_headers):
-    menu_item = _make_menu_item(client, "Nihari")
+    menu_item = _make_menu_item(client, auth_headers, "Nihari")
 
     first = client.post(
         "/recipes",
@@ -63,7 +64,7 @@ def test_recipe_rejects_duplicate_menu_item(client, auth_headers):
 
 
 def test_recipe_rejects_unknown_inventory_item(client, auth_headers):
-    menu_item = _make_menu_item(client, "Haleem")
+    menu_item = _make_menu_item(client, auth_headers, "Haleem")
 
     response = client.post(
         "/recipes",

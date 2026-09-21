@@ -287,3 +287,29 @@ class RecipeResponse(BaseModel):
     ingredients: list[RecipeIngredientResponse]
 
     model_config = ConfigDict(from_attributes=True)
+
+
+# ---- Reports ----
+
+class TopItem(BaseModel):
+    name: str
+    quantity: int
+
+
+class LowStockItem(BaseModel):
+    id: UUID
+    name: str
+    unit: str
+    quantity: Decimal
+    reorder_level: Decimal
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ReportsSummary(BaseModel):
+    total_revenue: Decimal
+    today_revenue: Decimal
+    total_orders: int
+    today_orders: int
+    top_items: list[TopItem]
+    low_stock: list[LowStockItem]

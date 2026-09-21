@@ -16,6 +16,7 @@ from routers.menu import router as menu_router
 from routers.orders import router as orders_router
 from routers.payments import router as payment_router
 from routers.recipes import router as recipes_router
+from routers.reports import router as reports_router
 from routers.tables import router as tables_router
 
 
@@ -51,6 +52,7 @@ app.include_router(customers_router)
 app.include_router(tables_router)
 app.include_router(inventory_router)
 app.include_router(recipes_router)
+app.include_router(reports_router)
 
 
 @app.get("/")

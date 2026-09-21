@@ -1,6 +1,7 @@
-def create_test_order(client):
+def create_test_order(client, auth_headers):
     menu_response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Chicken Biryani",
             "description": "Chicken biryani",
@@ -32,8 +33,8 @@ def create_test_order(client):
     return order_response.json()
 
 
-def test_create_payment(client):
-    order = create_test_order(client)
+def test_create_payment(client, auth_headers):
+    order = create_test_order(client, auth_headers)
 
     response = client.post(
         "/payments",
@@ -54,8 +55,8 @@ def test_create_payment(client):
     assert data["paid_at"] is not None
 
 
-def test_payment_uses_order_total(client):
-    order = create_test_order(client)
+def test_payment_uses_order_total(client, auth_headers):
+    order = create_test_order(client, auth_headers)
 
     response = client.post(
         "/payments",
@@ -85,8 +86,8 @@ def test_payment_order_not_found(client):
     assert response.json()["detail"] == "Order not found"
 
 
-def test_payment_already_exists(client):
-    order = create_test_order(client)
+def test_payment_already_exists(client, auth_headers):
+    order = create_test_order(client, auth_headers)
 
     first_response = client.post(
         "/payments",
@@ -113,8 +114,8 @@ def test_payment_already_exists(client):
     )
 
 
-def test_get_payment(client):
-    order = create_test_order(client)
+def test_get_payment(client, auth_headers):
+    order = create_test_order(client, auth_headers)
 
     create_response = client.post(
         "/payments",

@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database.database import get_db
+from dependencies.auth import require_admin
 from schemas.schemas import (
     MenuItemCreate,
     MenuItemResponse,
@@ -64,6 +65,7 @@ def read_menu_item(
 def create_menu(
     menu_item_data: MenuItemCreate,
     db: Session = Depends(get_db),
+    _: object = Depends(require_admin),
 ):
     return create_menu_item(
         db,
@@ -79,6 +81,7 @@ def update_menu(
     menu_item_id: UUID,
     menu_item_data: MenuItemUpdate,
     db: Session = Depends(get_db),
+    _: object = Depends(require_admin),
 ):
     menu_item = get_menu_item(
         db,
@@ -105,6 +108,7 @@ def update_menu(
 def delete_menu(
     menu_item_id: UUID,
     db: Session = Depends(get_db),
+    _: object = Depends(require_admin),
 ):
     menu_item = get_menu_item(
         db,

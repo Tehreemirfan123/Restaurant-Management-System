@@ -1,7 +1,8 @@
 # CRUD tests
-def test_create_menu_item(client):
+def test_create_menu_item(client, auth_headers):
     response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Chicken Biryani",
             "description": "Traditional Spicy Chicken Biryani with raita and Salad",
@@ -22,10 +23,29 @@ def test_create_menu_item(client):
     assert data["available"] is True
     assert "id" in data
 
-# Getting Menu Item
-def test_get_menu_items(client):
+
+# Creating a menu item needs an admin
+def test_create_menu_item_requires_admin(client):
+    response = client.post(
+        "/menu",
+        json={
+            "name": "No Auth Item",
+            "description": None,
+            "price": 100,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    )
+
+    assert response.status_code == 401
+
+
+# Getting Menu Item (public)
+def test_get_menu_items(client, auth_headers):
     client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Burger",
             "description": "Beef burger",
@@ -46,9 +66,10 @@ def test_get_menu_items(client):
     assert len(data) >= 1
 
 # Test validation
-def test_create_menu_item_rejects_negative_price(client):
+def test_create_menu_item_rejects_negative_price(client, auth_headers):
     response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Invalid Item",
             "description": None,
@@ -62,9 +83,10 @@ def test_create_menu_item_rejects_negative_price(client):
     assert response.status_code == 422
 
 # Invalid Category
-def test_create_menu_item_rejects_invalid_category(client):
+def test_create_menu_item_rejects_invalid_category(client, auth_headers):
     response = client.post(
         "/menu",
+        headers=auth_headers,
         json={
             "name": "Invalid Item",
             "description": None,
