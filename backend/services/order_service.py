@@ -73,13 +73,32 @@ def create_order(
             )
         delivery_fee = DELIVERY_FEE
 
-    if order_data.customer_id is not None:
-        customer = db.get(Customer, order_data.customer_id)
+    # Resolve the customer: an explicit id, or find-or-create by phone so
+    # repeat orders are tracked even for online checkouts.
+    customer_id = order_data.customer_id
+
+    if customer_id is not None:
+        customer = db.get(Customer, customer_id)
         if customer is None:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Customer not found",
             )
+    elif order_data.customer_phone:
+        customer = db.scalar(
+            select(Customer).where(
+                Customer.phone == order_data.customer_phone
+            )
+        )
+        if customer is None:
+            customer = Customer(
+                name=order_data.customer_name or "Customer",
+                phone=order_data.customer_phone,
+                address=order_data.delivery_address,
+            )
+            db.add(customer)
+            db.flush()
+        customer_id = customer.id
 
     order = Order(
         total_amount=0,
@@ -87,7 +106,7 @@ def create_order(
         delivery_fee=delivery_fee,
         delivery_address=order_data.delivery_address,
         table_id=order_data.table_id,
-        customer_id=order_data.customer_id,
+        customer_id=customer_id,
     )
 
     db.add(order)

@@ -15,6 +15,8 @@ export default function Cart() {
 
     const [orderType, setOrderType] = useState("pickup");
     const [address, setAddress] = useState("");
+    const [name, setName] = useState("");
+    const [phone, setPhone] = useState("");
     const [placing, setPlacing] = useState(false);
     const [error, setError] = useState("");
 
@@ -30,6 +32,8 @@ export default function Cart() {
             items,
             orderType,
             address: address.trim(),
+            name: name.trim(),
+            phone: phone.trim(),
         });
         window.open(url, "_blank", "noopener");
     }
@@ -41,6 +45,10 @@ export default function Cart() {
             setError("Please enter a delivery address");
             return;
         }
+        if (!name.trim() || !phone.trim()) {
+            setError("Please enter your name and phone");
+            return;
+        }
 
         setPlacing(true);
 
@@ -49,6 +57,8 @@ export default function Cart() {
                 order_type: orderType,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
+                customer_name: name.trim(),
+                customer_phone: phone.trim(),
                 items: items.map((i) => ({
                     menu_item_id: i.id,
                     quantity: i.quantity,
@@ -149,6 +159,24 @@ export default function Cart() {
                         </div>
 
                         <div className="bg-white rounded-xl shadow-sm p-4 mt-4">
+                            {/* Contact details */}
+                            <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                                <input
+                                    type="text"
+                                    value={name}
+                                    onChange={(e) => setName(e.target.value)}
+                                    placeholder="Your name"
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                />
+                                <input
+                                    type="tel"
+                                    value={phone}
+                                    onChange={(e) => setPhone(e.target.value)}
+                                    placeholder="Phone"
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                />
+                            </div>
+
                             {/* Pickup / delivery choice */}
                             <div className="flex gap-2 mb-3">
                                 {[

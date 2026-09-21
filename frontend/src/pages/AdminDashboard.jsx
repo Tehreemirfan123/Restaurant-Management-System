@@ -6,6 +6,7 @@ const TILES = [
     { label: "Menu Management", to: "/admin/menu", desc: "Add and edit dishes" },
     { label: "Inventory", to: "/admin/inventory", desc: "Track stock levels" },
     { label: "Staff", to: "/admin/staff", desc: "Manage team accounts" },
+    { label: "Customers", to: "/admin/customers", desc: "Segments & repeat orders" },
     { label: "Reports", to: "/admin/reports", desc: "Sales & performance" },
 ];
 

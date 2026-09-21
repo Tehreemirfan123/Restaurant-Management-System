@@ -5,7 +5,13 @@ import { DELIVERY_FEE, WHATSAPP_NUMBER } from "../config";
  * ordering path per the business plan: the customer taps through to
  * WhatsApp, where the owner confirms and takes payment.
  */
-export function buildWhatsappOrderUrl({ items, orderType, address }) {
+export function buildWhatsappOrderUrl({
+    items,
+    orderType,
+    address,
+    name,
+    phone,
+}) {
     const lines = items.map(
         (i) => `- ${i.quantity} x ${i.name} (Rs. ${i.price * i.quantity})`
     );
@@ -23,6 +29,9 @@ export function buildWhatsappOrderUrl({ items, orderType, address }) {
         "",
         `Type: ${orderType === "delivery" ? "Delivery" : "Pickup"}`,
     ];
+
+    if (name) parts.push(`Name: ${name}`);
+    if (phone) parts.push(`Phone: ${phone}`);
 
     if (orderType === "delivery") {
         parts.push(`Address: ${address || "(to share)"}`);

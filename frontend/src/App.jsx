@@ -1,6 +1,7 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminCustomers from "./pages/AdminCustomers";
 import AdminDashboard from "./pages/AdminDashboard";
 import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
@@ -88,6 +89,14 @@ function App() {
                 element={
                     <ProtectedRoute adminOnly>
                         <AdminStaff />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/customers"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminCustomers />
                     </ProtectedRoute>
                 }
             />

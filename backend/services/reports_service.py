@@ -60,11 +60,41 @@ def get_summary(db: Session) -> dict:
         ).all()
     )
 
+    # Repeat-customer metrics: count orders per (known) customer.
+    per_customer = (
+        select(
+            Order.customer_id,
+            func.count(Order.id).label("cnt"),
+        )
+        .where(Order.customer_id.is_not(None))
+        .group_by(Order.customer_id)
+        .subquery()
+    )
+
+    total_customers = db.scalar(
+        select(func.count()).select_from(per_customer)
+    ) or 0
+
+    repeat_customers = db.scalar(
+        select(func.count())
+        .select_from(per_customer)
+        .where(per_customer.c.cnt >= 2)
+    ) or 0
+
+    second_order_rate = (
+        round(repeat_customers / total_customers * 100, 1)
+        if total_customers
+        else 0.0
+    )
+
     return {
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
         "total_orders": total_orders,
         "today_orders": today_orders,
+        "total_customers": total_customers,
+        "repeat_customers": repeat_customers,
+        "second_order_rate": second_order_rate,
         "top_items": top_items,
         "low_stock": low_stock,
     }

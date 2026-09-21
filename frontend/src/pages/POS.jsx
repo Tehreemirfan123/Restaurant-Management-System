@@ -16,6 +16,8 @@ export default function POS() {
     const [lines, setLines] = useState([]);
     const [orderType, setOrderType] = useState("pickup");
     const [address, setAddress] = useState("");
+    const [custName, setCustName] = useState("");
+    const [custPhone, setCustPhone] = useState("");
     const [error, setError] = useState("");
 
     // Workflow: "building" -> place order -> "payment" -> "done"
@@ -74,6 +76,8 @@ export default function POS() {
     function resetOrder() {
         setLines([]);
         setAddress("");
+        setCustName("");
+        setCustPhone("");
         setOrderType("pickup");
         setPlacedOrder(null);
         setStage("building");
@@ -98,6 +102,8 @@ export default function POS() {
                 order_type: orderType,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
+                customer_name: custName.trim() || null,
+                customer_phone: custPhone.trim() || null,
                 items: lines.map((l) => ({
                     menu_item_id: l.id,
                     quantity: l.quantity,
@@ -203,6 +209,28 @@ export default function POS() {
                                     className="mb-3 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
                                 />
                             )}
+
+                            {/* Optional customer capture for repeat tracking */}
+                            <div className="flex gap-2 mb-3">
+                                <input
+                                    type="text"
+                                    value={custName}
+                                    disabled={stage !== "building"}
+                                    onChange={(e) => setCustName(e.target.value)}
+                                    placeholder="Customer name"
+                                    className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
+                                />
+                                <input
+                                    type="tel"
+                                    value={custPhone}
+                                    disabled={stage !== "building"}
+                                    onChange={(e) =>
+                                        setCustPhone(e.target.value)
+                                    }
+                                    placeholder="Phone"
+                                    className="w-28 border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
+                                />
+                            </div>
 
                             {/* Lines */}
                             <div className="flex-1 space-y-2 min-h-24">

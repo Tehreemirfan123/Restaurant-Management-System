@@ -55,6 +55,18 @@ export default function AdminReports() {
                                 label="Total orders"
                                 value={data.total_orders}
                             />
+                            <Stat
+                                label="Customers"
+                                value={data.total_customers}
+                            />
+                            <Stat
+                                label="Repeat customers"
+                                value={data.repeat_customers}
+                            />
+                            <Stat
+                                label="Second-order rate"
+                                value={`${data.second_order_rate}%`}
+                            />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">

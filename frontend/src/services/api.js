@@ -145,6 +145,16 @@ export function updateOrderStatus(id, status) {
     });
 }
 
+// ---- Customers ----
+
+export function getCustomers() {
+    return request("/customers");
+}
+
+export function updateCustomer(id, data) {
+    return request(`/customers/${id}`, { method: "PUT", body: data });
+}
+
 // ---- Tables ----
 
 export function getTables() {

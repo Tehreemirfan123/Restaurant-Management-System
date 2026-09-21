@@ -15,7 +15,7 @@ from services.customer_service import (
     create_customer,
     delete_customer,
     get_customer,
-    get_customers,
+    list_customers_with_stats,
     update_customer,
 )
 
@@ -29,7 +29,7 @@ router = APIRouter(
 
 @router.get("", response_model=list[CustomerResponse])
 def read_customers(db: Session = Depends(get_db)):
-    return get_customers(db)
+    return list_customers_with_stats(db)
 
 
 @router.get("/{customer_id}", response_model=CustomerResponse)

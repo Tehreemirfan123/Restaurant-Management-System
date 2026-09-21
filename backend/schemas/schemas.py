@@ -6,6 +6,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from models.models import (
     CategoryEnum,
+    CustomerSegmentEnum,
     DayOfWeekEnum,
     OrderStatusEnum,
     OrderTypeEnum,
@@ -93,7 +94,11 @@ class OrderCreate(BaseModel):
 
     table_id: UUID | None = None
 
+    # Either link an existing customer, or pass name/phone to find-or-create
+    # one so repeat orders can be tracked.
     customer_id: UUID | None = None
+    customer_name: str | None = None
+    customer_phone: str | None = None
 
 
 class OrderItemResponse(BaseModel):
@@ -196,6 +201,7 @@ class CustomerCreate(BaseModel):
     phone: str | None = Field(default=None, max_length=30)
     email: str | None = Field(default=None, max_length=255)
     address: str | None = None
+    segment: CustomerSegmentEnum | None = None
 
 
 class CustomerUpdate(BaseModel):
@@ -203,6 +209,7 @@ class CustomerUpdate(BaseModel):
     phone: str | None = Field(default=None, max_length=30)
     email: str | None = Field(default=None, max_length=255)
     address: str | None = None
+    segment: CustomerSegmentEnum | None = None
 
 
 class CustomerResponse(BaseModel):
@@ -211,7 +218,11 @@ class CustomerResponse(BaseModel):
     phone: str | None
     email: str | None
     address: str | None
+    segment: CustomerSegmentEnum | None
     created_at: datetime
+    # Derived stats (default so a plain ORM object still validates).
+    order_count: int = 0
+    last_order_at: datetime | None = None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -325,5 +336,9 @@ class ReportsSummary(BaseModel):
     today_revenue: Decimal
     total_orders: int
     today_orders: int
+    # Customer / repeat metrics (business plan's primary KPI).
+    total_customers: int
+    repeat_customers: int
+    second_order_rate: float
     top_items: list[TopItem]
     low_stock: list[LowStockItem]

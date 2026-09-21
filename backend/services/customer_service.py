@@ -1,9 +1,9 @@
 from uuid import UUID
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from models.models import Customer
+from models.models import Customer, Order
 from schemas.schemas import CustomerCreate, CustomerUpdate
 
 
@@ -12,6 +12,46 @@ def get_customers(db: Session) -> list[Customer]:
         db.scalars(
             select(Customer).order_by(Customer.name)
         ).all()
+    )
+
+
+def list_customers_with_stats(db: Session) -> list[dict]:
+    """Customers with derived order_count and last_order_at for the CRM view."""
+    rows = db.execute(
+        select(
+            Customer,
+            func.count(Order.id).label("order_count"),
+            func.max(Order.created_at).label("last_order_at"),
+        )
+        .outerjoin(Order, Order.customer_id == Customer.id)
+        .group_by(Customer.id)
+        .order_by(func.max(Order.created_at).desc().nullslast())
+    ).all()
+
+    result = []
+    for customer, order_count, last_order_at in rows:
+        result.append(
+            {
+                "id": customer.id,
+                "name": customer.name,
+                "phone": customer.phone,
+                "email": customer.email,
+                "address": customer.address,
+                "segment": customer.segment,
+                "created_at": customer.created_at,
+                "order_count": int(order_count or 0),
+                "last_order_at": last_order_at,
+            }
+        )
+    return result
+
+
+def get_customer_by_phone(
+    db: Session,
+    phone: str,
+) -> Customer | None:
+    return db.scalar(
+        select(Customer).where(Customer.phone == phone)
     )
 
 

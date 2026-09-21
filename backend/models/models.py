@@ -75,6 +75,14 @@ class DayOfWeekEnum(str, enum.Enum):
     sunday = "sunday"
 
 
+class CustomerSegmentEnum(str, enum.Enum):
+    office = "office"
+    student = "student"
+    hostel = "hostel"
+    household = "household"
+    other = "other"
+
+
 class Staff(Base):
     __tablename__ = "staff"
 
@@ -353,6 +361,11 @@ class Customer(Base):
 
     address: Mapped[str | None] = mapped_column(
         Text,
+        nullable=True,
+    )
+
+    segment: Mapped[CustomerSegmentEnum | None] = mapped_column(
+        Enum(CustomerSegmentEnum),
         nullable=True,
     )
 
