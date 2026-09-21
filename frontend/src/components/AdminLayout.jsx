@@ -3,8 +3,9 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 
 const NAV = [
-    { to: "/admin", label: "Reports", end: true },
+    { to: "/admin", label: "Dashboard", end: true },
     { to: "/admin/orders", label: "Orders" },
+    { to: "/admin/reports", label: "Reports" },
     { to: "/admin/menu", label: "Menu" },
     { to: "/admin/recipes", label: "Recipes" },
     { to: "/admin/inventory", label: "Inventory" },
@@ -42,7 +43,7 @@ export default function AdminLayout() {
     return (
         <div className="min-h-screen bg-gray-100 flex flex-col md:flex-row">
             {/* Sidebar */}
-            <aside className="bg-maroon-800 text-white md:w-52 md:min-h-screen shrink-0">
+            <aside className="no-print bg-maroon-800 text-white md:w-52 md:min-h-screen shrink-0">
                 <div className="px-4 py-4 border-b border-white/10">
                     <p className="font-bold leading-tight">Mehak&apos;s Kitchen</p>
                     <p className="text-xs text-gold-200">Admin Console</p>
@@ -69,7 +70,7 @@ export default function AdminLayout() {
 
             {/* Content */}
             <div className="flex-1 flex flex-col min-w-0">
-                <header className="flex items-center justify-between bg-white border-b px-4 md:px-6 py-3">
+                <header className="no-print flex items-center justify-between bg-white border-b px-4 md:px-6 py-3">
                     <div className="flex items-center gap-3">
                         <button
                             onClick={() => navigate(-1)}

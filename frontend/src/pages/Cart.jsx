@@ -1,7 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import CustomerHeader from "../components/CustomerHeader";
 import { DELIVERY_FEE } from "../config";
 import { useCart } from "../context/CartContext";
 import { createOrder, getOrderingStatus } from "../services/api";
@@ -84,10 +83,7 @@ export default function Cart() {
     }
 
     return (
-        <div className="min-h-screen bg-cream-100">
-            <CustomerHeader />
-
-            <main className="max-w-2xl mx-auto p-4">
+            <main className="max-w-2xl mx-auto p-4 py-8">
                 <h1 className="text-xl font-bold text-gray-800 mb-4">
                     Your Cart
                 </h1>
@@ -263,6 +259,5 @@ export default function Cart() {
                     </>
                 )}
             </main>
-        </div>
     );
 }

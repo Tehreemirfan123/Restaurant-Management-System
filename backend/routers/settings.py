@@ -37,6 +37,11 @@ def ordering_status(db: Session = Depends(get_db)):
         "orders_today": count,
         "daily_order_cap": settings.daily_order_cap,
         "delivery_fee": settings.delivery_fee,
+        "restaurant_name": settings.restaurant_name,
+        "contact_phone": settings.contact_phone,
+        "address": settings.address,
+        "opening_hours": settings.opening_hours,
+        "delivery_radius_km": settings.delivery_radius_km,
     }
 
 

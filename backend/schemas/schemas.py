@@ -455,3 +455,9 @@ class OrderingStatus(BaseModel):
     orders_today: int
     daily_order_cap: int | None
     delivery_fee: Decimal
+    # Public business info for the customer website.
+    restaurant_name: str
+    contact_phone: str | None
+    address: str | None
+    opening_hours: str | None
+    delivery_radius_km: Decimal

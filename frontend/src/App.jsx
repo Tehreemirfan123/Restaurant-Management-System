@@ -1,8 +1,13 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
 import AdminLayout from "./components/AdminLayout";
+import CustomerLayout from "./components/CustomerLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import Home from "./pages/Home";
 import AdminCustomers from "./pages/AdminCustomers";
+import AdminDashboard from "./pages/AdminDashboard";
 import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
 import AdminOrders from "./pages/AdminOrders";
@@ -23,10 +28,15 @@ import Tables from "./pages/Tables";
 function App() {
     return (
         <Routes>
-            {/* Public / customer */}
-            <Route path="/" element={<CustomerMenu />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/order/:id" element={<OrderTracking />} />
+            {/* Public / customer website */}
+            <Route element={<CustomerLayout />}>
+                <Route path="/" element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/menu" element={<CustomerMenu />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/cart" element={<Cart />} />
+                <Route path="/order/:id" element={<OrderTracking />} />
+            </Route>
             <Route path="/login" element={<Login />} />
 
             {/* Staff */}
@@ -63,7 +73,7 @@ function App() {
                 }
             />
 
-            {/* Admin console (Reports is the landing screen) */}
+            {/* Admin console (Dashboard is the landing screen) */}
             <Route
                 path="/admin"
                 element={
@@ -72,7 +82,8 @@ function App() {
                     </ProtectedRoute>
                 }
             >
-                <Route index element={<AdminReports />} />
+                <Route index element={<AdminDashboard />} />
+                <Route path="reports" element={<AdminReports />} />
                 <Route path="orders" element={<AdminOrders />} />
                 <Route path="menu" element={<AdminMenu />} />
                 <Route path="recipes" element={<AdminRecipesPage />} />
@@ -81,8 +92,6 @@ function App() {
                 <Route path="customers" element={<AdminCustomers />} />
                 <Route path="staff" element={<AdminStaff />} />
                 <Route path="settings" element={<AdminSettings />} />
-                {/* Legacy path kept working */}
-                <Route path="reports" element={<AdminReports />} />
             </Route>
 
             {/* Fallback */}

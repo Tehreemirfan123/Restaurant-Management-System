@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
-import CustomerHeader from "../components/CustomerHeader";
 import {
     getMenu,
     getOrder,
@@ -110,10 +109,7 @@ export default function OrderTracking() {
         : -1;
 
     return (
-        <div className="min-h-screen bg-cream-100">
-            <CustomerHeader />
-
-            <main className="max-w-2xl mx-auto p-4">
+            <main className="max-w-2xl mx-auto p-4 py-8">
                 {loading && <p className="text-gray-500">Loading order...</p>}
 
                 {error && (
@@ -305,6 +301,5 @@ export default function OrderTracking() {
                     </>
                 )}
             </main>
-        </div>
     );
 }

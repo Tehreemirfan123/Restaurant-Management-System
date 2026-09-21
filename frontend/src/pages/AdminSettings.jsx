@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 
+import { useTheme } from "../context/ThemeContext";
 import { getSettings, updateSettings } from "../services/api";
 
 const EMPTY = {
@@ -14,6 +15,7 @@ const EMPTY = {
 };
 
 export default function AdminSettings() {
+    const { theme, toggleTheme } = useTheme();
     const [form, setForm] = useState(EMPTY);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
@@ -79,6 +81,35 @@ export default function AdminSettings() {
 
             {!loading && (
                 <>
+                    {/* Appearance */}
+                    <section className="bg-white rounded-xl shadow-sm p-6">
+                        <h2 className="font-semibold text-gray-800 mb-3">
+                            Appearance
+                        </h2>
+                        <label className="flex items-center justify-between">
+                            <span className="text-gray-800">Dark mode</span>
+                            <button
+                                type="button"
+                                onClick={toggleTheme}
+                                role="switch"
+                                aria-checked={theme === "dark"}
+                                className={`relative w-12 h-6 rounded-full transition ${
+                                    theme === "dark"
+                                        ? "bg-maroon-700"
+                                        : "bg-gray-300"
+                                }`}
+                            >
+                                <span
+                                    className={`absolute top-0.5 left-0.5 h-5 w-5 rounded-full bg-white transition-transform ${
+                                        theme === "dark"
+                                            ? "translate-x-6"
+                                            : ""
+                                    }`}
+                                />
+                            </button>
+                        </label>
+                    </section>
+
                     {/* Business info */}
                     <section className="bg-white rounded-xl shadow-sm p-6 space-y-4">
                         <h2 className="font-semibold text-gray-800">

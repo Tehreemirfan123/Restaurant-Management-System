@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Enable class-based dark mode (toggled by adding `.dark` on <html>). */
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Mehak's Kitchen brand palette (from the official brochure). */
 @theme {
     --color-maroon-700: #791f2a;
@@ -17,4 +20,71 @@
 
     --color-sage-600: #526b4d;
     --color-sage-700: #435842;
+}
+
+/* Dark theme: a small override layer so the whole app themes without
+   touching every component. Brand maroon/gold accents stay as-is. */
+.dark body {
+    background-color: #171717;
+    color: #e5e5e5;
+}
+.dark .bg-white,
+.dark .bg-cream-50 {
+    background-color: #262626 !important;
+}
+.dark .bg-gray-100,
+.dark .bg-cream-100 {
+    background-color: #171717 !important;
+}
+.dark .bg-gray-50,
+.dark .bg-cream-200 {
+    background-color: #1f1f1f !important;
+}
+.dark .text-gray-800,
+.dark .text-gray-900 {
+    color: #f5f5f5 !important;
+}
+.dark .text-gray-700 {
+    color: #e5e5e5 !important;
+}
+.dark .text-gray-600 {
+    color: #cfcfcf !important;
+}
+.dark .text-gray-500 {
+    color: #a3a3a3 !important;
+}
+.dark .text-gray-400 {
+    color: #8a8a8a !important;
+}
+.dark .border,
+.dark .border-b,
+.dark .border-t,
+.dark .border-gray-200,
+.dark .border-gray-300,
+.dark .border-cream-200 {
+    border-color: #3a3a3a !important;
+}
+.dark input,
+.dark select,
+.dark textarea {
+    background-color: #1f1f1f;
+    color: #e5e5e5;
+    border-color: #404040;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+    color: #7a7a7a;
+}
+
+/* Print: show only the report, drop app chrome. */
+@media print {
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background: #fff;
+    }
+    .print-area {
+        box-shadow: none !important;
+    }
 }
