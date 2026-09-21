@@ -74,7 +74,7 @@ export default function OrderTracking() {
         : -1;
 
     return (
-        <div className="min-h-screen bg-amber-50">
+        <div className="min-h-screen bg-cream-100">
             <CustomerHeader />
 
             <main className="max-w-2xl mx-auto p-4">
@@ -85,7 +85,7 @@ export default function OrderTracking() {
                         <p className="text-red-600 mb-4">{error}</p>
                         <Link
                             to="/"
-                            className="text-amber-700 font-medium hover:underline"
+                            className="text-maroon-800 font-medium hover:underline"
                         >
                             Back to menu
                         </Link>
@@ -113,7 +113,7 @@ export default function OrderTracking() {
                                                 <div
                                                     className={`absolute right-1/2 top-3 h-0.5 w-full ${
                                                         index <= currentStep
-                                                            ? "bg-amber-600"
+                                                            ? "bg-maroon-700"
                                                             : "bg-gray-200"
                                                     }`}
                                                 />
@@ -121,7 +121,7 @@ export default function OrderTracking() {
                                             <div
                                                 className={`relative z-10 w-6 h-6 rounded-full flex items-center justify-center text-xs ${
                                                     done
-                                                        ? "bg-amber-600 text-white"
+                                                        ? "bg-maroon-700 text-white"
                                                         : "bg-gray-200 text-gray-400"
                                                 }`}
                                             >
@@ -130,7 +130,7 @@ export default function OrderTracking() {
                                             <span
                                                 className={`mt-1.5 text-xs ${
                                                     done
-                                                        ? "text-amber-700 font-medium"
+                                                        ? "text-maroon-800 font-medium"
                                                         : "text-gray-400"
                                                 }`}
                                             >
@@ -167,12 +167,30 @@ export default function OrderTracking() {
                                     </div>
                                 ))}
                             </div>
+
+                            {Number(order.delivery_fee) > 0 && (
+                                <div className="flex justify-between text-sm text-gray-500 mt-2">
+                                    <span>Delivery</span>
+                                    <span>
+                                        Rs.{" "}
+                                        {Number(order.delivery_fee).toFixed(0)}
+                                    </span>
+                                </div>
+                            )}
+
                             <div className="border-t mt-3 pt-3 flex justify-between font-bold text-gray-800">
                                 <span>Total</span>
                                 <span>
                                     Rs. {Number(order.total_amount).toFixed(0)}
                                 </span>
                             </div>
+
+                            <p className="text-xs text-gray-400 mt-3 capitalize">
+                                {order.order_type}
+                                {order.delivery_address
+                                    ? ` · ${order.delivery_address}`
+                                    : ""}
+                            </p>
                         </div>
 
                         <p className="text-center text-xs text-gray-400 mt-4">

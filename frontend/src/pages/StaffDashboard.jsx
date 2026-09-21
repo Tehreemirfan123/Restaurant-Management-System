@@ -5,7 +5,8 @@ import StaffHeader from "../components/StaffHeader";
 const TILES = [
     { label: "POS", to: "/staff/pos", desc: "Take orders & payments", ready: true },
     { label: "Kitchen", to: "/staff/kitchen", desc: "Live order queue", ready: true },
-    { label: "Tables", to: "/staff/tables", desc: "Floor status", ready: true },
+    // Tables/dine-in is hidden for the pickup & delivery business, but the
+    // route (/staff/tables) still works if dine-in is added back later.
 ];
 
 export default function StaffDashboard() {
@@ -27,7 +28,7 @@ export default function StaffDashboard() {
                         {t.ready ? (
                             <Link
                                 to={t.to}
-                                className="mt-4 text-amber-600 font-medium"
+                                className="mt-4 text-maroon-700 font-medium"
                             >
                                 Open →
                             </Link>

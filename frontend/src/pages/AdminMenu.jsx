@@ -10,11 +10,22 @@ import {
 
 const CATEGORIES = ["starters", "mains", "desserts", "drinks"];
 
+const DAYS = [
+    "monday",
+    "tuesday",
+    "wednesday",
+    "thursday",
+    "friday",
+    "saturday",
+    "sunday",
+];
+
 const EMPTY = {
     name: "",
     description: "",
     price: "",
     category: "mains",
+    day_of_week: "",
     available: true,
 };
 
@@ -41,6 +52,7 @@ export default function AdminMenu() {
             description: item.description || "",
             price: String(item.price),
             category: item.category,
+            day_of_week: item.day_of_week || "",
             available: item.available,
         });
         setError("");
@@ -61,6 +73,7 @@ export default function AdminMenu() {
             description: form.description || null,
             price: Number(form.price),
             category: form.category,
+            day_of_week: form.day_of_week || null,
             available: form.available,
         };
 
@@ -144,6 +157,20 @@ export default function AdminMenu() {
                             </option>
                         ))}
                     </select>
+                    <select
+                        value={form.day_of_week}
+                        onChange={(e) =>
+                            setForm({ ...form, day_of_week: e.target.value })
+                        }
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm capitalize"
+                    >
+                        <option value="">Any day (special)</option>
+                        {DAYS.map((d) => (
+                            <option key={d} value={d}>
+                                {d}
+                            </option>
+                        ))}
+                    </select>
                     <label className="flex items-center gap-2 text-sm text-gray-700">
                         <input
                             type="checkbox"
@@ -163,7 +190,7 @@ export default function AdminMenu() {
                     <div className="flex gap-2">
                         <button
                             type="submit"
-                            className="flex-1 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium py-2 rounded-lg"
+                            className="flex-1 bg-maroon-700 hover:bg-maroon-800 text-white text-sm font-medium py-2 rounded-lg"
                         >
                             {editingId ? "Save" : "Add"}
                         </button>
@@ -197,14 +224,14 @@ export default function AdminMenu() {
                                     )}
                                 </p>
                                 <p className="text-sm text-gray-500 capitalize">
-                                    {item.category} · Rs.{" "}
+                                    {item.day_of_week || "any day"} · Rs.{" "}
                                     {Number(item.price).toFixed(0)}
                                 </p>
                             </div>
                             <div className="flex gap-2 shrink-0">
                                 <button
                                     onClick={() => startEdit(item)}
-                                    className="text-sm text-amber-700 hover:underline"
+                                    className="text-sm text-maroon-800 hover:underline"
                                 >
                                     Edit
                                 </button>

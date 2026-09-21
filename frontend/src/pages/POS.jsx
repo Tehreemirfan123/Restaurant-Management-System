@@ -1,13 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import StaffHeader from "../components/StaffHeader";
-import {
-    createOrder,
-    createPayment,
-    getMenu,
-    getTables,
-    updateTable,
-} from "../services/api";
+import { createOrder, createPayment, getMenu } from "../services/api";
 
 const PAYMENT_METHODS = [
     { key: "cash", label: "Cash" },
@@ -15,12 +9,13 @@ const PAYMENT_METHODS = [
     { key: "online", label: "Online" },
 ];
 
+const DELIVERY_FEE = 80;
+
 export default function POS() {
     const [menu, setMenu] = useState([]);
-    const [tables, setTables] = useState([]);
     const [lines, setLines] = useState([]);
-    const [orderType, setOrderType] = useState("dine_in");
-    const [tableId, setTableId] = useState("");
+    const [orderType, setOrderType] = useState("pickup");
+    const [address, setAddress] = useState("");
     const [error, setError] = useState("");
 
     // Workflow: "building" -> place order -> "payment" -> "done"
@@ -32,15 +27,15 @@ export default function POS() {
         getMenu()
             .then((data) => setMenu((data || []).filter((m) => m.available)))
             .catch((err) => setError(err.message || "Failed to load menu"));
-        getTables()
-            .then((data) => setTables(data || []))
-            .catch(() => {});
     }, []);
 
-    const total = useMemo(
+    const subtotal = useMemo(
         () => lines.reduce((sum, l) => sum + l.price * l.quantity, 0),
         [lines]
     );
+
+    const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
+    const total = subtotal + deliveryFee;
 
     function addLine(item) {
         setLines((current) => {
@@ -78,8 +73,8 @@ export default function POS() {
 
     function resetOrder() {
         setLines([]);
-        setTableId("");
-        setOrderType("dine_in");
+        setAddress("");
+        setOrderType("pickup");
         setPlacedOrder(null);
         setStage("building");
         setError("");
@@ -92,8 +87,8 @@ export default function POS() {
             setError("Add at least one item");
             return;
         }
-        if (orderType === "dine_in" && !tableId) {
-            setError("Pick a table for a dine-in order");
+        if (orderType === "delivery" && !address.trim()) {
+            setError("Enter a delivery address");
             return;
         }
 
@@ -101,21 +96,13 @@ export default function POS() {
         try {
             const order = await createOrder({
                 order_type: orderType,
-                table_id: orderType === "dine_in" ? tableId : null,
+                delivery_address:
+                    orderType === "delivery" ? address.trim() : null,
                 items: lines.map((l) => ({
                     menu_item_id: l.id,
                     quantity: l.quantity,
                 })),
             });
-
-            // Keep the floor view in sync for dine-in orders.
-            if (orderType === "dine_in" && tableId) {
-                try {
-                    await updateTable(tableId, { status: "occupied" });
-                } catch {
-                    // Non-fatal; the order itself succeeded.
-                }
-            }
 
             setPlacedOrder(order);
             setStage("payment");
@@ -139,10 +126,6 @@ export default function POS() {
         }
     }
 
-    const availableTables = tables.filter(
-        (t) => t.status !== "occupied" || t.id === tableId
-    );
-
     return (
         <div className="min-h-screen bg-gray-100">
             <StaffHeader title="Point of Sale" />
@@ -156,12 +139,12 @@ export default function POS() {
                                 key={item.id}
                                 onClick={() => addLine(item)}
                                 disabled={stage !== "building"}
-                                className="bg-white rounded-xl shadow-sm p-3 text-left hover:ring-2 hover:ring-amber-400 disabled:opacity-50"
+                                className="bg-white rounded-xl shadow-sm p-3 text-left hover:ring-2 hover:ring-gold-500 disabled:opacity-50"
                             >
                                 <span className="block font-medium text-gray-800 text-sm">
                                     {item.name}
                                 </span>
-                                <span className="text-amber-700 text-sm">
+                                <span className="text-maroon-800 text-sm">
                                     Rs. {Number(item.price).toFixed(0)}
                                 </span>
                             </button>
@@ -183,7 +166,7 @@ export default function POS() {
                             </p>
                             <button
                                 onClick={resetOrder}
-                                className="mt-5 w-full bg-amber-600 hover:bg-amber-700 text-white font-semibold py-2.5 rounded-lg"
+                                className="mt-5 w-full bg-maroon-700 hover:bg-maroon-800 text-white font-semibold py-2.5 rounded-lg"
                             >
                                 New order
                             </button>
@@ -192,36 +175,33 @@ export default function POS() {
                         <>
                             {/* Order type toggle */}
                             <div className="flex gap-2 mb-3">
-                                {["dine_in", "takeaway"].map((t) => (
+                                {[
+                                    { key: "pickup", label: "Pickup" },
+                                    { key: "delivery", label: "Delivery" },
+                                ].map((t) => (
                                     <button
-                                        key={t}
+                                        key={t.key}
                                         disabled={stage !== "building"}
-                                        onClick={() => setOrderType(t)}
-                                        className={`flex-1 py-1.5 rounded-lg text-sm capitalize disabled:opacity-60 ${
-                                            orderType === t
-                                                ? "bg-amber-600 text-white"
+                                        onClick={() => setOrderType(t.key)}
+                                        className={`flex-1 py-1.5 rounded-lg text-sm disabled:opacity-60 ${
+                                            orderType === t.key
+                                                ? "bg-maroon-700 text-white"
                                                 : "bg-gray-100 text-gray-700"
                                         }`}
                                     >
-                                        {t.replace("_", "-")}
+                                        {t.label}
                                     </button>
                                 ))}
                             </div>
 
-                            {orderType === "dine_in" && (
-                                <select
-                                    value={tableId}
+                            {orderType === "delivery" && (
+                                <textarea
+                                    value={address}
                                     disabled={stage !== "building"}
-                                    onChange={(e) => setTableId(e.target.value)}
+                                    onChange={(e) => setAddress(e.target.value)}
+                                    placeholder="Delivery address"
                                     className="mb-3 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
-                                >
-                                    <option value="">Select table…</option>
-                                    {availableTables.map((t) => (
-                                        <option key={t.id} value={t.id}>
-                                            Table {t.number} ({t.capacity} seats)
-                                        </option>
-                                    ))}
-                                </select>
+                                />
                             )}
 
                             {/* Lines */}
@@ -275,7 +255,14 @@ export default function POS() {
                                 ))}
                             </div>
 
-                            <div className="border-t mt-3 pt-3 flex justify-between font-bold text-gray-800">
+                            {deliveryFee > 0 && (
+                                <div className="flex justify-between text-sm text-gray-500 mt-3">
+                                    <span>Delivery</span>
+                                    <span>Rs. {deliveryFee}</span>
+                                </div>
+                            )}
+
+                            <div className="border-t mt-2 pt-3 flex justify-between font-bold text-gray-800">
                                 <span>Total</span>
                                 <span>Rs. {total.toFixed(0)}</span>
                             </div>
@@ -290,7 +277,7 @@ export default function POS() {
                                 <button
                                     onClick={placeOrder}
                                     disabled={busy}
-                                    className="mt-3 w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg"
+                                    className="mt-3 w-full bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 text-white font-semibold py-2.5 rounded-lg"
                                 >
                                     {busy ? "Placing…" : "Place Order"}
                                 </button>

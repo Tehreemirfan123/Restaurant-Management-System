@@ -108,6 +108,10 @@ export function getMenu() {
     return request("/menu", { auth: false });
 }
 
+export function getTodaysMenu() {
+    return request("/menu/today", { auth: false });
+}
+
 export function createMenuItem(item) {
     return request("/menu", { method: "POST", body: item });
 }
