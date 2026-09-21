@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
 
 import CustomerHeader from "../components/CustomerHeader";
+import { DISPLAY_PHONE } from "../config";
 import { useCart } from "../context/CartContext";
 import { getTodaysMenu } from "../services/api";
+import { whatsappUrl } from "../utils/whatsapp";
 
 export default function CustomerMenu() {
     const { addItem, items } = useCart();
@@ -91,7 +93,15 @@ export default function CustomerMenu() {
                         Mehak&apos;s Kitchen
                     </p>
                     <p>Open daily 11:00 AM – 11:00 PM · Pickup &amp; delivery</p>
-                    <p>Delivery Rs. 80 within 3 km · Order: 0324-7509762</p>
+                    <p>Delivery Rs. 80 within 3 km</p>
+                    <a
+                        href={whatsappUrl("Hi Mehak's Kitchen, I'd like to order today's menu.")}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-block mt-2 text-[#25D366] font-semibold"
+                    >
+                        Order on WhatsApp · {DISPLAY_PHONE}
+                    </a>
                 </footer>
             </main>
         </div>

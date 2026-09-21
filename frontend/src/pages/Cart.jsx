@@ -4,6 +4,7 @@ import { Link, useNavigate } from "react-router-dom";
 import CustomerHeader from "../components/CustomerHeader";
 import { useCart } from "../context/CartContext";
 import { createOrder } from "../services/api";
+import { buildWhatsappOrderUrl } from "../utils/whatsapp";
 
 const DELIVERY_FEE = 80;
 
@@ -19,6 +20,19 @@ export default function Cart() {
 
     const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
     const grandTotal = totalAmount + deliveryFee;
+
+    function handleWhatsappOrder() {
+        if (orderType === "delivery" && !address.trim()) {
+            setError("Please enter a delivery address");
+            return;
+        }
+        const url = buildWhatsappOrderUrl({
+            items,
+            orderType,
+            address: address.trim(),
+        });
+        window.open(url, "_blank", "noopener");
+    }
 
     async function handleCheckout() {
         setError("");
@@ -191,9 +205,20 @@ export default function Cart() {
                             )}
 
                             <button
+                                onClick={handleWhatsappOrder}
+                                className="w-full bg-[#25D366] hover:brightness-95 text-white font-semibold py-3 rounded-lg flex items-center justify-center gap-2"
+                            >
+                                Order on WhatsApp
+                            </button>
+
+                            <p className="text-center text-xs text-gray-400 my-2">
+                                or place it online
+                            </p>
+
+                            <button
                                 onClick={handleCheckout}
                                 disabled={placing}
-                                className="w-full bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 text-white font-semibold py-3 rounded-lg"
+                                className="w-full border border-maroon-700 text-maroon-700 hover:bg-cream-100 disabled:opacity-60 font-semibold py-3 rounded-lg"
                             >
                                 {placing ? "Placing order..." : "Place Order"}
                             </button>
