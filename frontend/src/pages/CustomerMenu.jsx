@@ -1,79 +1,111 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 
+import CustomerHeader from "../components/CustomerHeader";
+import { useCart } from "../context/CartContext";
 import { getMenu } from "../services/api";
 
-const CATEGORY_ORDER = ["starters", "mains", "desserts", "drinks"];
+const CATEGORIES = [
+    { key: "all", label: "All" },
+    { key: "starters", label: "Starters" },
+    { key: "mains", label: "Mains" },
+    { key: "desserts", label: "Desserts" },
+    { key: "drinks", label: "Drinks" },
+];
 
 export default function CustomerMenu() {
-    const [items, setItems] = useState([]);
+    const { addItem, items } = useCart();
+
+    const [menu, setMenu] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
+    const [activeCategory, setActiveCategory] = useState("all");
 
     useEffect(() => {
         getMenu()
-            .then((data) => setItems(data || []))
+            .then((data) => setMenu(data || []))
             .catch((err) => setError(err.message || "Failed to load menu"))
             .finally(() => setLoading(false));
     }, []);
 
-    const grouped = CATEGORY_ORDER.map((cat) => ({
-        category: cat,
-        items: items.filter((i) => i.category === cat && i.available),
-    })).filter((g) => g.items.length > 0);
+    const available = useMemo(
+        () => menu.filter((i) => i.available),
+        [menu]
+    );
+
+    const visible = useMemo(() => {
+        if (activeCategory === "all") return available;
+        return available.filter((i) => i.category === activeCategory);
+    }, [available, activeCategory]);
+
+    function quantityInCart(id) {
+        return items.find((i) => i.id === id)?.quantity ?? 0;
+    }
 
     return (
         <div className="min-h-screen bg-amber-50">
-            <header className="bg-amber-600 text-white px-6 py-5 flex items-center justify-between">
-                <div>
-                    <h1 className="text-2xl font-bold">Mehak&apos;s Kitchen</h1>
-                    <p className="text-amber-100 text-sm">Our Menu</p>
-                </div>
-                <Link
-                    to="/login"
-                    className="text-sm bg-white/20 hover:bg-white/30 px-3 py-1.5 rounded-lg"
-                >
-                    Staff Login
-                </Link>
-            </header>
+            <CustomerHeader />
 
-            <main className="max-w-3xl mx-auto p-6">
+            {/* Category filter */}
+            <div className="bg-white border-b sticky top-[72px] z-10">
+                <div className="max-w-3xl mx-auto px-4 py-3 flex gap-2 overflow-x-auto">
+                    {CATEGORIES.map((cat) => (
+                        <button
+                            key={cat.key}
+                            onClick={() => setActiveCategory(cat.key)}
+                            className={`px-4 py-1.5 rounded-full text-sm whitespace-nowrap transition ${
+                                activeCategory === cat.key
+                                    ? "bg-amber-600 text-white"
+                                    : "bg-amber-100 text-amber-800 hover:bg-amber-200"
+                            }`}
+                        >
+                            {cat.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <main className="max-w-3xl mx-auto p-4">
                 {loading && <p className="text-gray-500">Loading menu...</p>}
                 {error && <p className="text-red-600">{error}</p>}
 
-                {!loading && !error && grouped.length === 0 && (
-                    <p className="text-gray-500">No menu items available yet.</p>
+                {!loading && !error && visible.length === 0 && (
+                    <p className="text-gray-500 py-8 text-center">
+                        Nothing here right now.
+                    </p>
                 )}
 
-                {grouped.map((group) => (
-                    <section key={group.category} className="mb-8">
-                        <h2 className="text-lg font-bold text-amber-800 capitalize mb-3 border-b border-amber-200 pb-1">
-                            {group.category}
-                        </h2>
-                        <div className="space-y-3">
-                            {group.items.map((item) => (
-                                <div
-                                    key={item.id}
-                                    className="bg-white rounded-xl shadow-sm p-4 flex justify-between items-start"
-                                >
-                                    <div className="pr-4">
-                                        <h3 className="font-semibold text-gray-800">
-                                            {item.name}
-                                        </h3>
-                                        {item.description && (
-                                            <p className="text-sm text-gray-500 mt-0.5">
-                                                {item.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                    <span className="font-semibold text-amber-700 whitespace-nowrap">
+                <div className="space-y-3">
+                    {visible.map((item) => {
+                        const qty = quantityInCart(item.id);
+                        return (
+                            <div
+                                key={item.id}
+                                className="bg-white rounded-xl shadow-sm p-4 flex justify-between items-center gap-4"
+                            >
+                                <div className="min-w-0">
+                                    <h3 className="font-semibold text-gray-800">
+                                        {item.name}
+                                    </h3>
+                                    {item.description && (
+                                        <p className="text-sm text-gray-500 mt-0.5 line-clamp-2">
+                                            {item.description}
+                                        </p>
+                                    )}
+                                    <span className="text-amber-700 font-semibold text-sm mt-1 inline-block">
                                         Rs. {Number(item.price).toFixed(0)}
                                     </span>
                                 </div>
-                            ))}
-                        </div>
-                    </section>
-                ))}
+
+                                <button
+                                    onClick={() => addItem(item)}
+                                    className="shrink-0 bg-amber-600 hover:bg-amber-700 text-white text-sm font-medium px-4 py-2 rounded-lg"
+                                >
+                                    {qty > 0 ? `Add (${qty})` : "Add"}
+                                </button>
+                            </div>
+                        );
+                    })}
+                </div>
             </main>
         </div>
     );
