@@ -83,6 +83,31 @@ App runs at http://localhost:5173
 - `/staff` — staff dashboard: POS, kitchen, tables (requires login)
 - `/admin` — admin dashboard: menu, inventory, staff, reports (admin only)
 
+## Running with Docker
+
+The whole stack (PostgreSQL + backend + frontend) can run with Docker
+Compose. From the project root:
+
+```bash
+docker compose up --build
+```
+
+- Frontend: http://localhost:5173
+- Backend API: http://localhost:8000
+- The backend runs `alembic upgrade head` on start, so the schema is
+  created automatically.
+
+Seed the initial admin and sample data once the stack is up:
+
+```bash
+docker compose run --rm backend python seed.py
+```
+
+Configuration is via environment variables in `docker-compose.yml`
+(`DATABASE_URL`, `SECRET_KEY`, `CORS_ORIGINS`, seed admin credentials).
+For a real deployment, change `SECRET_KEY` and the admin password, and set
+`VITE_API_BASE_URL` (frontend build arg) to the backend's public URL.
+
 ## Tests
 
 From the project root (backend venv active, PostgreSQL running):
