@@ -4,9 +4,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
 import Cart from "./pages/Cart";
 import CustomerMenu from "./pages/CustomerMenu";
+import Kitchen from "./pages/Kitchen";
 import Login from "./pages/Login";
 import OrderTracking from "./pages/OrderTracking";
+import POS from "./pages/POS";
 import StaffDashboard from "./pages/StaffDashboard";
+import Tables from "./pages/Tables";
 
 function App() {
     return (
@@ -23,6 +26,30 @@ function App() {
                 element={
                     <ProtectedRoute>
                         <StaffDashboard />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/staff/pos"
+                element={
+                    <ProtectedRoute>
+                        <POS />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/staff/kitchen"
+                element={
+                    <ProtectedRoute>
+                        <Kitchen />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/staff/tables"
+                element={
+                    <ProtectedRoute>
+                        <Tables />
                     </ProtectedRoute>
                 }
             />

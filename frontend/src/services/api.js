@@ -138,6 +138,16 @@ export function updateOrderStatus(id, status) {
     });
 }
 
+// ---- Tables ----
+
+export function getTables() {
+    return request("/tables");
+}
+
+export function updateTable(id, data) {
+    return request(`/tables/${id}`, { method: "PUT", body: data });
+}
+
 // ---- Payments ----
 
 export function createPayment(payload) {

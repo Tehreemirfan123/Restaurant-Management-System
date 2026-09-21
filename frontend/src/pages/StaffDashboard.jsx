@@ -3,9 +3,9 @@ import { Link } from "react-router-dom";
 import StaffHeader from "../components/StaffHeader";
 
 const TILES = [
-    { label: "POS", to: "/staff/pos", desc: "Take orders & payments", ready: false },
-    { label: "Kitchen", to: "/staff/kitchen", desc: "Live order queue", ready: false },
-    { label: "Tables", to: "/staff/tables", desc: "Floor status", ready: false },
+    { label: "POS", to: "/staff/pos", desc: "Take orders & payments", ready: true },
+    { label: "Kitchen", to: "/staff/kitchen", desc: "Live order queue", ready: true },
+    { label: "Tables", to: "/staff/tables", desc: "Floor status", ready: true },
 ];
 
 export default function StaffDashboard() {
