@@ -145,6 +145,10 @@ export function updateOrderStatus(id, status) {
     });
 }
 
+export function cancelOrder(id) {
+    return request(`/orders/${id}/cancel`, { method: "POST" });
+}
+
 export function getOrderFeedback(id) {
     return request(`/orders/${id}/feedback`, { auth: false });
 }

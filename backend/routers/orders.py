@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database.database import get_db
+from dependencies.auth import get_current_staff
 from models.models import OrderFeedback
 from schemas.schemas import (
     FeedbackCreate,
@@ -13,6 +14,7 @@ from schemas.schemas import (
     OrderStatusUpdate,
 )
 from services.order_service import (
+    cancel_order,
     create_order,
     get_order,
     get_orders,
@@ -81,6 +83,7 @@ def change_order_status(
     order_id: UUID,
     status_data: OrderStatusUpdate,
     db: Session = Depends(get_db),
+    _: object = Depends(get_current_staff),
 ):
     order = get_order(
         db,
@@ -98,6 +101,26 @@ def change_order_status(
         order,
         status_data.status,
     )
+
+
+@router.post(
+    "/{order_id}/cancel",
+    response_model=OrderResponse,
+)
+def cancel(
+    order_id: UUID,
+    db: Session = Depends(get_db),
+    _: object = Depends(get_current_staff),
+):
+    order = get_order(db, order_id)
+
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+
+    return cancel_order(db, order)
 
 
 @router.get(

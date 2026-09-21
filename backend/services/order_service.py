@@ -170,25 +170,30 @@ def create_order(
     return order
 
 
+def _annotate(order: Order) -> Order:
+    """Attach transient customer_name / payment_status for the API response."""
+    order.customer_name = order.customer.name if order.customer else None
+    order.payment_status = (
+        order.payment.status.value if order.payment else None
+    )
+    return order
+
+
 def get_orders(
     db: Session,
 ) -> list[Order]:
-    return list(
-        db.scalars(
-            select(Order)
-            .order_by(Order.created_at.desc())
-        ).all()
-    )
+    orders = db.scalars(
+        select(Order).order_by(Order.created_at.desc())
+    ).all()
+    return [_annotate(o) for o in orders]
 
 
 def get_order(
     db: Session,
     order_id: UUID,
 ) -> Order | None:
-    return db.get(
-        Order,
-        order_id,
-    )
+    order = db.get(Order, order_id)
+    return _annotate(order) if order is not None else None
 
 
 def update_order_status(
@@ -201,4 +206,37 @@ def update_order_status(
     db.commit()
     db.refresh(order)
 
-    return order
+    return _annotate(order)
+
+
+def cancel_order(
+    db: Session,
+    order: Order,
+) -> Order:
+    """Cancel an order, refund a paid payment, and free its table."""
+    from models.models import (
+        OrderStatusEnum,
+        PaymentStatusEnum,
+        TableStatusEnum,
+    )
+
+    if order.status == OrderStatusEnum.cancelled:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Order is already cancelled",
+        )
+
+    order.status = OrderStatusEnum.cancelled
+
+    if order.payment is not None and (
+        order.payment.status == PaymentStatusEnum.paid
+    ):
+        order.payment.status = PaymentStatusEnum.refunded
+
+    if order.table is not None:
+        order.table.status = TableStatusEnum.available
+
+    db.commit()
+    db.refresh(order)
+
+    return _annotate(order)

@@ -6,6 +6,8 @@ import { createOrder, createPayment, getMenu } from "../services/api";
 const PAYMENT_METHODS = [
     { key: "cash", label: "Cash" },
     { key: "card", label: "Card" },
+    { key: "jazzcash", label: "JazzCash" },
+    { key: "easypaisa", label: "Easypaisa" },
     { key: "online", label: "Online" },
 ];
 
@@ -18,6 +20,7 @@ export default function POS() {
     const [address, setAddress] = useState("");
     const [custName, setCustName] = useState("");
     const [custPhone, setCustPhone] = useState("");
+    const [advance, setAdvance] = useState(false);
     const [error, setError] = useState("");
 
     // Workflow: "building" -> place order -> "payment" -> "done"
@@ -78,6 +81,7 @@ export default function POS() {
         setAddress("");
         setCustName("");
         setCustPhone("");
+        setAdvance(false);
         setOrderType("pickup");
         setPlacedOrder(null);
         setStage("building");
@@ -123,7 +127,14 @@ export default function POS() {
         setError("");
         setBusy(true);
         try {
-            await createPayment({ order_id: placedOrder.id, method });
+            const payload = { order_id: placedOrder.id, method };
+            if (advance) {
+                // 50% advance, rounded to the rupee.
+                payload.amount = Math.round(
+                    Number(placedOrder.total_amount) / 2
+                );
+            }
+            await createPayment(payload);
             setStage("done");
         } catch (err) {
             setError(err.message || "Payment failed");
@@ -313,6 +324,22 @@ export default function POS() {
 
                             {stage === "payment" && (
                                 <div className="mt-3">
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 mb-2">
+                                        <input
+                                            type="checkbox"
+                                            checked={advance}
+                                            onChange={(e) =>
+                                                setAdvance(e.target.checked)
+                                            }
+                                        />
+                                        Take 50% advance (Rs.{" "}
+                                        {Math.round(
+                                            Number(
+                                                placedOrder.total_amount
+                                            ) / 2
+                                        )}
+                                        )
+                                    </label>
                                     <p className="text-sm text-gray-600 mb-2">
                                         Take payment:
                                     </p>

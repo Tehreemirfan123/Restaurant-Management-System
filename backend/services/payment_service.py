@@ -35,10 +35,17 @@ def create_payment(
             detail="Order has already been paid",
         )
 
-    # Create payment using the amount stored on the order
+    # Use the given amount for a partial/advance payment, otherwise the
+    # full order total.
+    amount = (
+        payment_data.amount
+        if payment_data.amount is not None
+        else order.total_amount
+    )
+
     payment = Payment(
         order_id=order.id,
-        amount=order.total_amount,
+        amount=amount,
         method=payment_data.method,
         status=PaymentStatusEnum.paid,
         paid_at=datetime.now(timezone.utc),

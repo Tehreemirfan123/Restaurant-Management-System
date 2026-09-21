@@ -128,6 +128,9 @@ class OrderResponse(BaseModel):
     customer_id: UUID | None
     created_at: datetime
     items: list[OrderItemResponse]
+    # Convenience fields for the orders view (set on the ORM object).
+    customer_name: str | None = None
+    payment_status: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -141,6 +144,9 @@ class PaymentCreate(BaseModel):
     order_id: UUID
 
     method: PaymentMethodEnum
+
+    # Optional partial/advance amount; defaults to the order total.
+    amount: Decimal | None = Field(default=None, gt=0, decimal_places=2)
 
 
 class PaymentResponse(BaseModel):

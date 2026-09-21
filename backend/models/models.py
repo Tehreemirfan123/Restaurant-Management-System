@@ -31,18 +31,22 @@ class OrderStatusEnum(str, enum.Enum):
     preparing = "preparing"
     ready = "ready"
     delivered = "delivered"
+    cancelled = "cancelled"
 
 class PaymentMethodEnum(str, enum.Enum):
     cash = "cash"
     card = "card"
     bank_transfer = "bank_transfer"
     online = "online"
+    jazzcash = "jazzcash"
+    easypaisa = "easypaisa"
 
 
 class PaymentStatusEnum(str, enum.Enum):
     pending = "pending"
     paid = "paid"
     failed = "failed"
+    refunded = "refunded"
 
 
 class RoleEnum(str, enum.Enum):

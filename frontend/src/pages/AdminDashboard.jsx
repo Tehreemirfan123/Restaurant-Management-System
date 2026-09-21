@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import StaffHeader from "../components/StaffHeader";
 
 const TILES = [
+    { label: "Orders", to: "/admin/orders", desc: "Manage & cancel orders" },
     { label: "Menu Management", to: "/admin/menu", desc: "Add and edit dishes" },
     { label: "Inventory", to: "/admin/inventory", desc: "Track stock levels" },
     { label: "Recipes", to: "/admin/recipes", desc: "Ingredients per dish" },
