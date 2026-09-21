@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from database.database import get_db
@@ -15,8 +15,11 @@ router = APIRouter(
 
 
 @router.get("/summary", response_model=ReportsSummary)
-def read_summary(db: Session = Depends(get_db)):
-    return get_summary(db)
+def read_summary(
+    period: str = Query("all", pattern="^(today|week|month|all)$"),
+    db: Session = Depends(get_db),
+):
+    return get_summary(db, period)
 
 
 @router.get("/costing", response_model=list[DishCosting])

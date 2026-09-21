@@ -11,6 +11,7 @@ export function buildWhatsappOrderUrl({
     address,
     name,
     phone,
+    deliveryFee = DELIVERY_FEE,
 }) {
     const lines = items.map(
         (i) => `- ${i.quantity} x ${i.name} (Rs. ${i.price * i.quantity})`
@@ -20,7 +21,7 @@ export function buildWhatsappOrderUrl({
         (sum, i) => sum + i.price * i.quantity,
         0
     );
-    const fee = orderType === "delivery" ? DELIVERY_FEE : 0;
+    const fee = orderType === "delivery" ? deliveryFee : 0;
 
     const parts = [
         "Hi Mehak's Kitchen, I'd like to order:",

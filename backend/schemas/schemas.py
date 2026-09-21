@@ -382,6 +382,15 @@ class ReportsSummary(BaseModel):
     feedback_count: int
     top_items: list[TopItem]
     low_stock: list[LowStockItem]
+    # Period-scoped metrics (period = today | week | month | all)
+    period: str
+    period_revenue: Decimal
+    period_orders: int
+    period_new_customers: int
+    period_cost: Decimal
+    period_profit: Decimal
+    period_avg_order_value: Decimal
+    period_waste_value: Decimal
 
 
 class DishCosting(BaseModel):
@@ -420,11 +429,23 @@ class FeedbackResponse(BaseModel):
 class SettingsUpdate(BaseModel):
     accepting_orders: bool | None = None
     daily_order_cap: int | None = Field(default=None, ge=0)
+    restaurant_name: str | None = Field(default=None, min_length=1, max_length=150)
+    contact_phone: str | None = Field(default=None, max_length=30)
+    address: str | None = None
+    opening_hours: str | None = Field(default=None, max_length=120)
+    delivery_fee: Decimal | None = Field(default=None, ge=0, decimal_places=2)
+    delivery_radius_km: Decimal | None = Field(default=None, ge=0, decimal_places=1)
 
 
 class SettingsResponse(BaseModel):
     accepting_orders: bool
     daily_order_cap: int | None
+    restaurant_name: str
+    contact_phone: str | None
+    address: str | None
+    opening_hours: str | None
+    delivery_fee: Decimal
+    delivery_radius_km: Decimal
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -433,3 +454,4 @@ class OrderingStatus(BaseModel):
     accepting_orders: bool
     orders_today: int
     daily_order_cap: int | None
+    delivery_fee: Decimal

@@ -644,6 +644,41 @@ class Settings(Base):
         nullable=True,
     )
 
+    # Business info (shown to customers / used on receipts).
+    restaurant_name: Mapped[str] = mapped_column(
+        String(150),
+        default="Mehak's Kitchen",
+        nullable=False,
+    )
+
+    contact_phone: Mapped[str | None] = mapped_column(
+        String(30),
+        nullable=True,
+    )
+
+    address: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    opening_hours: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+
+    # Delivery configuration.
+    delivery_fee: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("80"),
+        nullable=False,
+    )
+
+    delivery_radius_km: Mapped[Decimal] = mapped_column(
+        Numeric(5, 1),
+        default=Decimal("3"),
+        nullable=False,
+    )
+
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(timezone.utc),

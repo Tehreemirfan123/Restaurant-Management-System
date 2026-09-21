@@ -239,8 +239,8 @@ export function deleteRecipe(id) {
 
 // ---- Reports ----
 
-export function getReportsSummary() {
-    return request("/reports/summary");
+export function getReportsSummary(period = "all") {
+    return request(`/reports/summary?period=${period}`);
 }
 
 export function getReportsCosting() {

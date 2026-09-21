@@ -36,6 +36,7 @@ def ordering_status(db: Session = Depends(get_db)):
         "accepting_orders": accepting,
         "orders_today": count,
         "daily_order_cap": settings.daily_order_cap,
+        "delivery_fee": settings.delivery_fee,
     }
 
 

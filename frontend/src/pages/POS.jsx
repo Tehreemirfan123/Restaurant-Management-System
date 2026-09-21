@@ -1,7 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 
 import StaffHeader from "../components/StaffHeader";
-import { createOrder, createPayment, getMenu } from "../services/api";
+import { DELIVERY_FEE } from "../config";
+import {
+    createOrder,
+    createPayment,
+    getMenu,
+    getOrderingStatus,
+} from "../services/api";
 
 const PAYMENT_METHODS = [
     { key: "cash", label: "Cash" },
@@ -11,8 +17,6 @@ const PAYMENT_METHODS = [
     { key: "online", label: "Online" },
 ];
 
-const DELIVERY_FEE = 80;
-
 export default function POS() {
     const [menu, setMenu] = useState([]);
     const [lines, setLines] = useState([]);
@@ -21,6 +25,7 @@ export default function POS() {
     const [custName, setCustName] = useState("");
     const [custPhone, setCustPhone] = useState("");
     const [advance, setAdvance] = useState(false);
+    const [feeConfig, setFeeConfig] = useState(DELIVERY_FEE);
     const [error, setError] = useState("");
 
     // Workflow: "building" -> place order -> "payment" -> "done"
@@ -32,6 +37,12 @@ export default function POS() {
         getMenu()
             .then((data) => setMenu((data || []).filter((m) => m.available)))
             .catch((err) => setError(err.message || "Failed to load menu"));
+        getOrderingStatus()
+            .then((s) => {
+                if (s?.delivery_fee != null)
+                    setFeeConfig(Number(s.delivery_fee));
+            })
+            .catch(() => {});
     }, []);
 
     const subtotal = useMemo(
@@ -39,7 +50,7 @@ export default function POS() {
         [lines]
     );
 
-    const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
+    const deliveryFee = orderType === "delivery" ? feeConfig : 0;
     const total = subtotal + deliveryFee;
 
     function addLine(item) {

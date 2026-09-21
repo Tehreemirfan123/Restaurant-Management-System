@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
 
-import StaffHeader from "../components/StaffHeader";
 import {
     createRecipe,
     deleteRecipe,
@@ -127,8 +126,6 @@ export default function AdminRecipes() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <StaffHeader title="Recipes" />
 
             <main className="max-w-4xl mx-auto p-6 grid gap-6 md:grid-cols-2">
                 {/* Form */}
@@ -285,6 +282,5 @@ export default function AdminRecipes() {
                     ))}
                 </div>
             </main>
-        </div>
     );
 }

@@ -52,3 +52,37 @@ def test_not_accepting_blocks_orders(client, auth_headers):
         json={"accepting_orders": True, "daily_order_cap": None},
     )
     assert _place(client, item).status_code == 201
+
+
+def test_settings_expanded_fields(client, auth_headers):
+    resp = client.get("/settings", headers=auth_headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    for key in ("restaurant_name", "delivery_fee", "delivery_radius_km"):
+        assert key in data
+
+
+def test_configurable_delivery_fee_applies_to_orders(client, auth_headers):
+    # Set a custom delivery fee.
+    client.put(
+        "/settings",
+        headers=auth_headers,
+        json={"delivery_fee": 150, "accepting_orders": True},
+    )
+
+    item = _make_menu_item(client, auth_headers, "Fee Dish")
+    resp = client.post(
+        "/orders",
+        json={
+            "order_type": "delivery",
+            "delivery_address": "somewhere",
+            "items": [{"menu_item_id": item["id"], "quantity": 1}],
+        },
+    )
+    assert resp.status_code == 201
+    data = resp.json()
+    assert float(data["delivery_fee"]) == 150
+    assert float(data["total_amount"]) == 350  # 200 + 150
+
+    # Reset so other tests see the default fee.
+    client.put("/settings", headers=auth_headers, json={"delivery_fee": 80})

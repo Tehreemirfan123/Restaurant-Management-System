@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -6,18 +6,91 @@ from sqlalchemy.orm import Session
 from decimal import Decimal
 
 from models.models import (
+    Customer,
     InventoryItem,
-    MenuItem,
     Order,
     OrderItem,
+    OrderStatusEnum,
+    MenuItem,
     Payment,
     PaymentStatusEnum,
     Recipe,
     RecipeIngredient,
+    WasteLog,
 )
 
 
-def get_summary(db: Session) -> dict:
+def _period_start(period: str):
+    """Start date (inclusive) for a reporting period, or None for all-time."""
+    today = datetime.now(timezone.utc).date()
+    if period == "today":
+        return today
+    if period == "week":
+        return today - timedelta(days=6)
+    if period == "month":
+        return today - timedelta(days=29)
+    return None
+
+
+def _period_metrics(db: Session, period: str) -> dict:
+    start = _period_start(period)
+    not_cancelled = Order.status != OrderStatusEnum.cancelled
+    paid = Payment.status == PaymentStatusEnum.paid
+
+    rev_q = select(func.coalesce(func.sum(Payment.amount), 0)).where(paid)
+    ord_q = select(func.count(Order.id)).where(not_cancelled)
+    cust_q = select(func.count(Customer.id))
+    if start is not None:
+        rev_q = rev_q.where(func.date(Payment.paid_at) >= start)
+        ord_q = ord_q.where(func.date(Order.created_at) >= start)
+        cust_q = cust_q.where(func.date(Customer.created_at) >= start)
+
+    revenue = db.scalar(rev_q) or Decimal("0")
+    orders = db.scalar(ord_q) or 0
+    new_customers = db.scalar(cust_q) or 0
+
+    # Estimated cost of goods for orders placed in the period.
+    varcost = {
+        c["menu_item_id"]: c["variable_cost"] for c in get_costing(db)
+    }
+    oi_q = (
+        select(OrderItem.menu_item_id, OrderItem.quantity)
+        .join(Order, Order.id == OrderItem.order_id)
+        .where(not_cancelled)
+    )
+    if start is not None:
+        oi_q = oi_q.where(func.date(Order.created_at) >= start)
+    cost = Decimal("0")
+    for mid, qty in db.execute(oi_q).all():
+        cost += Decimal(varcost.get(mid, 0)) * qty
+
+    # Waste value in the period (only for costed inventory items).
+    w_q = select(WasteLog.quantity, InventoryItem.unit_cost).join(
+        InventoryItem, InventoryItem.id == WasteLog.inventory_item_id
+    )
+    if start is not None:
+        w_q = w_q.where(func.date(WasteLog.created_at) >= start)
+    waste = Decimal("0")
+    for qty, unit_cost in db.execute(w_q).all():
+        waste += (qty or Decimal("0")) * (unit_cost or Decimal("0"))
+
+    avg_order_value = (
+        (revenue / orders) if orders else Decimal("0")
+    )
+
+    return {
+        "period": period,
+        "period_revenue": revenue,
+        "period_orders": orders,
+        "period_new_customers": new_customers,
+        "period_cost": cost,
+        "period_profit": revenue - cost,
+        "period_avg_order_value": avg_order_value,
+        "period_waste_value": waste,
+    }
+
+
+def get_summary(db: Session, period: str = "all") -> dict:
     today = datetime.now(timezone.utc).date()
 
     paid = Payment.status == PaymentStatusEnum.paid
@@ -102,7 +175,7 @@ def get_summary(db: Session) -> dict:
     )
     average_rating = round(float(avg_rating), 1) if avg_rating else 0.0
 
-    return {
+    result = {
         "total_revenue": total_revenue,
         "today_revenue": today_revenue,
         "total_orders": total_orders,
@@ -116,6 +189,8 @@ def get_summary(db: Session) -> dict:
         "top_items": top_items,
         "low_stock": low_stock,
     }
+    result.update(_period_metrics(db, period))
+    return result
 
 
 def get_costing(db: Session) -> list[dict]:

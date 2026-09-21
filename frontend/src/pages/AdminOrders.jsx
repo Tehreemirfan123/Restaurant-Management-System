@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
 
-import StaffHeader from "../components/StaffHeader";
 import { cancelOrder, getOrders, updateOrderStatus } from "../services/api";
 
 const STATUSES = ["received", "preparing", "ready", "delivered"];
@@ -67,8 +66,6 @@ export default function AdminOrders() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <StaffHeader title="Orders" />
 
             <main className="max-w-5xl mx-auto p-6">
                 <div className="flex gap-2 mb-4 flex-wrap">
@@ -172,6 +169,5 @@ export default function AdminOrders() {
                     ))}
                 </div>
             </main>
-        </div>
     );
 }

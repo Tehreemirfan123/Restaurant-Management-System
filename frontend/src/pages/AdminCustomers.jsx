@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import StaffHeader from "../components/StaffHeader";
 import { getCustomers, updateCustomer } from "../services/api";
 
 const SEGMENTS = ["office", "student", "hostel", "household", "other"];
@@ -40,8 +39,6 @@ export default function AdminCustomers() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <StaffHeader title="Customers" />
 
             <main className="max-w-4xl mx-auto p-6">
                 {loading && <p className="text-gray-500">Loading...</p>}
@@ -99,6 +96,5 @@ export default function AdminCustomers() {
                     ))}
                 </div>
             </main>
-        </div>
     );
 }

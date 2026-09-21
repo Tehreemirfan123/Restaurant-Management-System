@@ -1,12 +1,11 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import CustomerHeader from "../components/CustomerHeader";
+import { DELIVERY_FEE } from "../config";
 import { useCart } from "../context/CartContext";
-import { createOrder } from "../services/api";
+import { createOrder, getOrderingStatus } from "../services/api";
 import { buildWhatsappOrderUrl } from "../utils/whatsapp";
-
-const DELIVERY_FEE = 80;
 
 export default function Cart() {
     const { items, setQuantity, removeItem, clearCart, totalAmount } =
@@ -17,10 +16,19 @@ export default function Cart() {
     const [address, setAddress] = useState("");
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
+    const [feeConfig, setFeeConfig] = useState(DELIVERY_FEE);
     const [placing, setPlacing] = useState(false);
     const [error, setError] = useState("");
 
-    const deliveryFee = orderType === "delivery" ? DELIVERY_FEE : 0;
+    useEffect(() => {
+        getOrderingStatus()
+            .then((s) => {
+                if (s?.delivery_fee != null) setFeeConfig(Number(s.delivery_fee));
+            })
+            .catch(() => {});
+    }, []);
+
+    const deliveryFee = orderType === "delivery" ? feeConfig : 0;
     const grandTotal = totalAmount + deliveryFee;
 
     function handleWhatsappOrder() {
@@ -34,6 +42,7 @@ export default function Cart() {
             address: address.trim(),
             name: name.trim(),
             phone: phone.trim(),
+            deliveryFee: feeConfig,
         });
         window.open(url, "_blank", "noopener");
     }

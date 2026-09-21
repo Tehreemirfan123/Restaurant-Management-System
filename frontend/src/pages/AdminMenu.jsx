@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 
-import StaffHeader from "../components/StaffHeader";
 import {
     createMenuItem,
     deleteMenuItem,
@@ -104,8 +103,6 @@ export default function AdminMenu() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-100">
-            <StaffHeader title="Menu Management" />
 
             <main className="max-w-4xl mx-auto p-6 grid gap-6 md:grid-cols-3">
                 {/* Form */}
@@ -263,6 +260,5 @@ export default function AdminMenu() {
                     ))}
                 </div>
             </main>
-        </div>
     );
 }

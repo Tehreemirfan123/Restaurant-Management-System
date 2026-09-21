@@ -1,8 +1,8 @@
 import { Navigate, Route, Routes } from "react-router-dom";
 
+import AdminLayout from "./components/AdminLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminCustomers from "./pages/AdminCustomers";
-import AdminDashboard from "./pages/AdminDashboard";
 import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
 import AdminOrders from "./pages/AdminOrders";
@@ -63,87 +63,27 @@ function App() {
                 }
             />
 
-            {/* Admin */}
+            {/* Admin console (Reports is the landing screen) */}
             <Route
                 path="/admin"
                 element={
                     <ProtectedRoute adminOnly>
-                        <AdminDashboard />
+                        <AdminLayout />
                     </ProtectedRoute>
                 }
-            />
-            <Route
-                path="/admin/menu"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminMenu />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/orders"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminOrders />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/inventory"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminInventory />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/recipes"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminRecipesPage />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/waste"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminWaste />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/settings"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminSettings />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/staff"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminStaff />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/customers"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminCustomers />
-                    </ProtectedRoute>
-                }
-            />
-            <Route
-                path="/admin/reports"
-                element={
-                    <ProtectedRoute adminOnly>
-                        <AdminReports />
-                    </ProtectedRoute>
-                }
-            />
+            >
+                <Route index element={<AdminReports />} />
+                <Route path="orders" element={<AdminOrders />} />
+                <Route path="menu" element={<AdminMenu />} />
+                <Route path="recipes" element={<AdminRecipesPage />} />
+                <Route path="inventory" element={<AdminInventory />} />
+                <Route path="waste" element={<AdminWaste />} />
+                <Route path="customers" element={<AdminCustomers />} />
+                <Route path="staff" element={<AdminStaff />} />
+                <Route path="settings" element={<AdminSettings />} />
+                {/* Legacy path kept working */}
+                <Route path="reports" element={<AdminReports />} />
+            </Route>
 
             {/* Fallback */}
             <Route path="*" element={<Navigate to="/" replace />} />

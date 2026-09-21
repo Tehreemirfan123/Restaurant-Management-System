@@ -5,7 +5,6 @@ from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from core.config import DELIVERY_FEE
 from models.models import (
     Customer,
     MenuItem,
@@ -81,7 +80,7 @@ def create_order(
             detail="A dine-in order requires a table",
         )
 
-    # A delivery order needs an address and carries the flat delivery fee.
+    # A delivery order needs an address and carries the configured fee.
     delivery_fee = Decimal("0")
     if order_data.order_type == OrderTypeEnum.delivery:
         if not order_data.delivery_address:
@@ -89,7 +88,7 @@ def create_order(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A delivery order requires a delivery address",
             )
-        delivery_fee = DELIVERY_FEE
+        delivery_fee = settings.delivery_fee
 
     # Resolve the customer: an explicit id, or find-or-create by phone so
     # repeat orders are tracked even for online checkouts.
