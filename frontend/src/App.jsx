@@ -2,6 +2,10 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminDashboard from "./pages/AdminDashboard";
+import AdminInventory from "./pages/AdminInventory";
+import AdminMenu from "./pages/AdminMenu";
+import AdminReports from "./pages/AdminReports";
+import AdminStaff from "./pages/AdminStaff";
 import Cart from "./pages/Cart";
 import CustomerMenu from "./pages/CustomerMenu";
 import Kitchen from "./pages/Kitchen";
@@ -60,6 +64,38 @@ function App() {
                 element={
                     <ProtectedRoute adminOnly>
                         <AdminDashboard />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/menu"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminMenu />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/inventory"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminInventory />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/staff"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminStaff />
+                    </ProtectedRoute>
+                }
+            />
+            <Route
+                path="/admin/reports"
+                element={
+                    <ProtectedRoute adminOnly>
+                        <AdminReports />
                     </ProtectedRoute>
                 }
             />

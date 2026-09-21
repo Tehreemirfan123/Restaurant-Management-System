@@ -148,6 +148,40 @@ export function updateTable(id, data) {
     return request(`/tables/${id}`, { method: "PUT", body: data });
 }
 
+// ---- Inventory ----
+
+export function getInventory() {
+    return request("/inventory");
+}
+
+export function createInventoryItem(item) {
+    return request("/inventory", { method: "POST", body: item });
+}
+
+export function updateInventoryItem(id, item) {
+    return request(`/inventory/${id}`, { method: "PUT", body: item });
+}
+
+export function deleteInventoryItem(id) {
+    return request(`/inventory/${id}`, { method: "DELETE" });
+}
+
+// ---- Staff ----
+
+export function getStaff() {
+    return request("/auth/staff");
+}
+
+export function createStaff(payload) {
+    return request("/auth/staff", { method: "POST", body: payload });
+}
+
+// ---- Reports ----
+
+export function getReportsSummary() {
+    return request("/reports/summary");
+}
+
 // ---- Payments ----
 
 export function createPayment(payload) {
