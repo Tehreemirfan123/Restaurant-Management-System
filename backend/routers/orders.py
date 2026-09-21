@@ -4,7 +4,10 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
 from database.database import get_db
+from models.models import OrderFeedback
 from schemas.schemas import (
+    FeedbackCreate,
+    FeedbackResponse,
     OrderCreate,
     OrderResponse,
     OrderStatusUpdate,
@@ -95,3 +98,56 @@ def change_order_status(
         order,
         status_data.status,
     )
+
+
+@router.get(
+    "/{order_id}/feedback",
+    response_model=FeedbackResponse,
+)
+def read_feedback(order_id: UUID, db: Session = Depends(get_db)):
+    order = get_order(db, order_id)
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    if order.feedback is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No feedback yet",
+        )
+    return order.feedback
+
+
+@router.post(
+    "/{order_id}/feedback",
+    response_model=FeedbackResponse,
+    status_code=status.HTTP_201_CREATED,
+)
+def submit_feedback(
+    order_id: UUID,
+    feedback_data: FeedbackCreate,
+    db: Session = Depends(get_db),
+):
+    order = get_order(db, order_id)
+    if order is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Order not found",
+        )
+    if order.feedback is not None:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Feedback already submitted for this order",
+        )
+
+    feedback = OrderFeedback(
+        order_id=order.id,
+        rating=feedback_data.rating,
+        would_reorder=feedback_data.would_reorder,
+        comment=feedback_data.comment,
+    )
+    db.add(feedback)
+    db.commit()
+    db.refresh(feedback)
+    return feedback

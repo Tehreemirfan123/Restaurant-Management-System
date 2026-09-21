@@ -91,7 +91,16 @@ def get_summary(db: Session) -> dict:
         else 0.0
     )
 
+    from models.models import OrderFeedback
     from services.waste_service import total_waste_value
+
+    feedback_count = db.scalar(
+        select(func.count(OrderFeedback.id))
+    ) or 0
+    avg_rating = db.scalar(
+        select(func.avg(OrderFeedback.rating))
+    )
+    average_rating = round(float(avg_rating), 1) if avg_rating else 0.0
 
     return {
         "total_revenue": total_revenue,
@@ -102,6 +111,8 @@ def get_summary(db: Session) -> dict:
         "repeat_customers": repeat_customers,
         "second_order_rate": second_order_rate,
         "total_waste_value": total_waste_value(db),
+        "average_rating": average_rating,
+        "feedback_count": feedback_count,
         "top_items": top_items,
         "low_stock": low_stock,
     }

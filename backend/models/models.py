@@ -261,6 +261,12 @@ class Order(Base):
         back_populates="orders",
     )
 
+    feedback: Mapped["OrderFeedback | None"] = relationship(
+        back_populates="order",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
+
 
 class OrderItem(Base):
     __tablename__ = "order_items"
@@ -569,3 +575,45 @@ class WasteLog(Base):
     )
 
     inventory_item: Mapped["InventoryItem | None"] = relationship()
+
+
+class OrderFeedback(Base):
+    __tablename__ = "order_feedback"
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        primary_key=True,
+        default=uuid.uuid4,
+    )
+
+    order_id: Mapped[UUID] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("orders.id"),
+        nullable=False,
+        unique=True,
+    )
+
+    rating: Mapped[int] = mapped_column(
+        nullable=False,
+    )
+
+    would_reorder: Mapped[bool] = mapped_column(
+        Boolean,
+        default=True,
+        nullable=False,
+    )
+
+    comment: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
+    order: Mapped["Order"] = relationship(
+        back_populates="feedback",
+    )

@@ -77,6 +77,14 @@ export default function AdminReports() {
                                     data.total_waste_value
                                 ).toFixed(0)}`}
                             />
+                            <Stat
+                                label="Avg rating"
+                                value={
+                                    data.feedback_count
+                                        ? `${data.average_rating}★ (${data.feedback_count})`
+                                        : "—"
+                                }
+                            />
                         </div>
 
                         <div className="grid gap-4 md:grid-cols-2">

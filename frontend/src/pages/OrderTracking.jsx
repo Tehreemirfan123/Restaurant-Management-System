@@ -2,7 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import CustomerHeader from "../components/CustomerHeader";
-import { getMenu, getOrder } from "../services/api";
+import {
+    getMenu,
+    getOrder,
+    getOrderFeedback,
+    submitOrderFeedback,
+} from "../services/api";
 
 const STEPS = [
     { key: "received", label: "Received" },
@@ -19,6 +24,12 @@ export default function OrderTracking() {
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(true);
 
+    const [feedback, setFeedback] = useState(null);
+    const [rating, setRating] = useState(0);
+    const [wouldReorder, setWouldReorder] = useState(true);
+    const [comment, setComment] = useState("");
+    const [fbError, setFbError] = useState("");
+
     const intervalRef = useRef(null);
 
     useEffect(() => {
@@ -33,6 +44,31 @@ export default function OrderTracking() {
             })
             .catch(() => {});
     }, []);
+
+    useEffect(() => {
+        // Check whether feedback was already left for this order.
+        getOrderFeedback(id)
+            .then((fb) => setFeedback(fb))
+            .catch(() => setFeedback(null));
+    }, [id]);
+
+    async function handleSubmitFeedback() {
+        setFbError("");
+        if (!rating) {
+            setFbError("Please pick a rating");
+            return;
+        }
+        try {
+            const fb = await submitOrderFeedback(id, {
+                rating,
+                would_reorder: wouldReorder,
+                comment: comment.trim() || null,
+            });
+            setFeedback(fb);
+        } catch (err) {
+            setFbError(err.message || "Could not submit feedback");
+        }
+    }
 
     useEffect(() => {
         let active = true;
@@ -191,6 +227,76 @@ export default function OrderTracking() {
                                     ? ` · ${order.delivery_address}`
                                     : ""}
                             </p>
+                        </div>
+
+                        {/* Feedback */}
+                        <div className="bg-white rounded-xl shadow-sm p-5 mt-4">
+                            {feedback ? (
+                                <div className="text-center">
+                                    <p className="font-semibold text-gray-800">
+                                        Thanks for your feedback!
+                                    </p>
+                                    <p className="text-gold-500 text-lg mt-1">
+                                        {"★".repeat(feedback.rating)}
+                                        <span className="text-gray-300">
+                                            {"★".repeat(5 - feedback.rating)}
+                                        </span>
+                                    </p>
+                                </div>
+                            ) : (
+                                <>
+                                    <h2 className="font-semibold text-gray-800 mb-2">
+                                        How was your order?
+                                    </h2>
+                                    <div className="flex gap-1 mb-3">
+                                        {[1, 2, 3, 4, 5].map((n) => (
+                                            <button
+                                                key={n}
+                                                onClick={() => setRating(n)}
+                                                className={`text-2xl ${
+                                                    n <= rating
+                                                        ? "text-gold-500"
+                                                        : "text-gray-300"
+                                                }`}
+                                                aria-label={`${n} stars`}
+                                            >
+                                                ★
+                                            </button>
+                                        ))}
+                                    </div>
+                                    <label className="flex items-center gap-2 text-sm text-gray-700 mb-3">
+                                        <input
+                                            type="checkbox"
+                                            checked={wouldReorder}
+                                            onChange={(e) =>
+                                                setWouldReorder(
+                                                    e.target.checked
+                                                )
+                                            }
+                                        />
+                                        I would order again
+                                    </label>
+                                    <textarea
+                                        value={comment}
+                                        onChange={(e) =>
+                                            setComment(e.target.value)
+                                        }
+                                        placeholder="Any comments? (optional)"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"
+                                    />
+                                    {fbError && (
+                                        <p className="text-red-600 text-sm mb-2">
+                                            {fbError}
+                                        </p>
+                                    )}
+                                    <button
+                                        onClick={handleSubmitFeedback}
+                                        className="w-full bg-maroon-700 hover:bg-maroon-800 text-white font-semibold py-2.5 rounded-lg"
+                                    >
+                                        Submit feedback
+                                    </button>
+                                </>
+                            )}
                         </div>
 
                         <p className="text-center text-xs text-gray-400 mt-4">

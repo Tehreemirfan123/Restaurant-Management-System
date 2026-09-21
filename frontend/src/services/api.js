@@ -145,6 +145,18 @@ export function updateOrderStatus(id, status) {
     });
 }
 
+export function getOrderFeedback(id) {
+    return request(`/orders/${id}/feedback`, { auth: false });
+}
+
+export function submitOrderFeedback(id, payload) {
+    return request(`/orders/${id}/feedback`, {
+        method: "POST",
+        body: payload,
+        auth: false,
+    });
+}
+
 // ---- Customers ----
 
 export function getCustomers() {
