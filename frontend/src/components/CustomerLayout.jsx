@@ -22,7 +22,7 @@ export default function CustomerLayout() {
     useEffect(() => {
         getOrderingStatus()
             .then(setInfo)
-            .catch(() => {});
+            .catch(() => { });
     }, []);
 
     // Close the mobile menu whenever the route changes.
@@ -41,10 +41,10 @@ export default function CustomerLayout() {
         <div className="min-h-screen flex flex-col bg-cream-100">
             {/* Nav */}
             <header className="bg-maroon-700 text-white sticky top-0 z-20">
-                <div className="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+                <div className="max-w-5xl mx-auto px-4 py-4 flex items-center justify-between">
                     <Link to="/" className="font-bold text-lg leading-none">
                         {name}
-                        <span className="block text-[10px] font-normal text-gold-200">
+                        <span className="block my-1 text-[15px] font-normal text-gold-200">
                             Khanoon ki Mehak
                         </span>
                     </Link>
@@ -58,10 +58,9 @@ export default function CustomerLayout() {
                                     to={l.to}
                                     end={l.end}
                                     className={({ isActive }) =>
-                                        `px-3 py-1.5 rounded-lg whitespace-nowrap ${
-                                            isActive
-                                                ? "bg-white/15 font-medium"
-                                                : "text-gold-100 hover:bg-white/10"
+                                        `px-3 py-1.5 rounded-lg whitespace-nowrap ${isActive
+                                            ? "bg-white/15 font-medium"
+                                            : "text-gold-100 hover:bg-white/10"
                                         }`
                                     }
                                 >
@@ -104,10 +103,9 @@ export default function CustomerLayout() {
                                 to={l.to}
                                 end={l.end}
                                 className={({ isActive }) =>
-                                    `px-3 py-2 rounded-lg ${
-                                        isActive
-                                            ? "bg-white/15 font-medium"
-                                            : "text-gold-100 hover:bg-white/10"
+                                    `px-3 py-2 rounded-lg ${isActive
+                                        ? "bg-white/15 font-medium"
+                                        : "text-gold-100 hover:bg-white/10"
                                     }`
                                 }
                             >

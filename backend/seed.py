@@ -38,6 +38,8 @@ SAMPLE_MENU = [
     ("Sabzi / Daal", "Sabzi, daal mash or daal channa fry", 160, CategoryEnum.mains, DayOfWeekEnum.tuesday, 25),
     ("Chicken White Karahi", "Creamy chicken white karahi", 230, CategoryEnum.mains, DayOfWeekEnum.wednesday, 30),
     ("Karri Pakora", "Karri pakora with 2 roti / masar chawal", 220, CategoryEnum.mains, DayOfWeekEnum.thursday, 25),
+    # Mutton Kunna is an advance-order special (day_of_week=None). Its price is
+    # kept for internal costing only and is never shown to customers.
     ("Mutton Kunna", "Available on advance order. Ask for details.", 700, CategoryEnum.mains, None, 40),
 ]
 

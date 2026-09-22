@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 
 import { useCart } from "../context/CartContext";
 import { getMenu, getOrderingStatus } from "../services/api";
+import { whatsappUrl } from "../utils/whatsapp";
 
 const DAYS = [
     "monday",
@@ -53,7 +54,7 @@ export default function CustomerMenu() {
         return items.find((i) => i.id === id)?.quantity ?? 0;
     }
 
-    function Dish({ item, orderable }) {
+    function Dish({ item, orderable, special }) {
         const qty = qtyInCart(item.id);
         return (
             <div className="bg-cream-50 rounded-xl shadow-sm p-4 flex justify-between items-center gap-4">
@@ -64,11 +65,29 @@ export default function CustomerMenu() {
                             {item.description}
                         </p>
                     )}
-                    <span className="text-gold-600 font-semibold text-sm mt-1 inline-block">
-                        Rs. {Number(item.price).toFixed(0)}
-                    </span>
+                    {/* Advance-order specials never show a price. */}
+                    {special ? (
+                        <span className="text-gold-600 font-medium text-sm mt-1 inline-block">
+                            Advance order — ask for details
+                        </span>
+                    ) : (
+                        <span className="text-gold-600 font-semibold text-sm mt-1 inline-block">
+                            Rs. {Number(item.price).toFixed(0)}
+                        </span>
+                    )}
                 </div>
-                {orderable && accepting ? (
+                {special ? (
+                    <a
+                        href={whatsappUrl(
+                            `Hi Mehak's Kitchen, I'd like to ask about ${item.name} (advance order).`
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="shrink-0 bg-[#25D366] hover:brightness-95 text-white text-sm font-medium px-4 py-2 rounded-lg"
+                    >
+                        Ask on WhatsApp
+                    </a>
+                ) : orderable && accepting ? (
                     <button
                         onClick={() => addItem(item)}
                         className="shrink-0 bg-maroon-700 hover:bg-maroon-800 text-white text-sm font-medium px-4 py-2 rounded-lg"
@@ -149,7 +168,7 @@ export default function CustomerMenu() {
                     </h2>
                     <div className="space-y-3">
                         {byDay.specials.map((item) => (
-                            <Dish key={item.id} item={item} orderable />
+                            <Dish key={item.id} item={item} special />
                         ))}
                     </div>
                 </section>

@@ -5,22 +5,28 @@ import heroImg from "../assets/hero.png";
 import { getTodaysMenu } from "../services/api";
 import { whatsappUrl } from "../utils/whatsapp";
 
+const IMG = "?w=600&q=60&auto=format&fit=crop";
+
 const HIGHLIGHTS = [
     {
         title: "Fresh Daily",
         text: "A focused daily menu keeps every meal fresh and consistent.",
+        image: "https://images.unsplash.com/photo-1596797038530-2c107229654b",
     },
     {
         title: "Homemade Taste",
         text: "Comforting local favourites made for lunch and dinner.",
+        image: "https://images.unsplash.com/photo-1504674900247-0877df9cc836",
     },
     {
         title: "Pickup & Delivery",
-        text: "Order for pickup or local delivery within 3 km.",
+        text: "Order for pickup or local delivery.",
+        image: "https://images.unsplash.com/photo-1526367790999-0150786686a2",
     },
     {
         title: "Local & Convenient",
         text: "Serving nearby offices, students, hostels and households.",
+        image: "https://images.unsplash.com/photo-1568901346375-23c9450c58cd",
     },
 ];
 
@@ -36,6 +42,9 @@ export default function Home() {
             .catch(() => {});
     }, []);
 
+    // Advance-order specials (no set day) never show a price.
+    const isSpecial = (item) => !item.day_of_week;
+
     return (
         <div>
             {/* Hero */}
@@ -43,7 +52,7 @@ export default function Home() {
                 <img
                     src={heroImg}
                     alt="Mehak's Kitchen"
-                    className="w-full h-72 md:h-96 object-cover"
+                    className="w-full h-200 md:h-170 object-cover opacity-100"
                 />
                 <div className="absolute inset-0 bg-maroon-900/60 flex items-center">
                     <div className="max-w-5xl mx-auto px-6 w-full text-white">
@@ -60,7 +69,7 @@ export default function Home() {
                         <div className="mt-6 flex flex-wrap gap-3">
                             <Link
                                 to="/menu"
-                                className="bg-gold-500 hover:bg-gold-600 text-maroon-900 font-semibold px-5 py-2.5 rounded-lg"
+                                className="bg-gold-500 hover:bg-gold-600 text-maroon-900 font-bold px-5 py-2.5 rounded-xl"
                             >
                                 View Menu
                             </Link>
@@ -70,7 +79,7 @@ export default function Home() {
                                 )}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="bg-[#25D366] hover:brightness-95 text-white font-semibold px-5 py-2.5 rounded-lg"
+                                className="bg-green-700 hover:brightness-95 text-white font-bold px-5 py-2.5 rounded-xl"
                             >
                                 Order on WhatsApp
                             </a>
@@ -85,47 +94,75 @@ export default function Home() {
                     {HIGHLIGHTS.map((h) => (
                         <div
                             key={h.title}
-                            className="bg-cream-50 rounded-xl shadow-sm p-5"
+                            className="bg-cream-50 rounded-xl shadow-sm overflow-hidden flex flex-col"
                         >
-                            <h3 className="font-semibold text-maroon-700">
-                                {h.title}
-                            </h3>
-                            <p className="text-sm text-gray-600 mt-1">
-                                {h.text}
-                            </p>
+                            <img
+                                src={h.image + IMG}
+                                alt={h.title}
+                                loading="lazy"
+                                className="w-full h-32 object-cover"
+                            />
+                            <div className="p-5">
+                                <h3 className="font-semibold text-maroon-700">
+                                    {h.title}
+                                </h3>
+                                <p className="text-sm text-gray-600 mt-1">
+                                    {h.text}
+                                </p>
+                            </div>
                         </div>
                     ))}
                 </div>
             </section>
 
-            {/* Today's dish */}
+            {/* Today's menu */}
             <section className="max-w-5xl mx-auto px-6 pb-12">
-                <div className="bg-cream-50 rounded-2xl shadow-sm p-6 md:p-8 text-center">
+                <div className="text-center mb-5">
                     <p className="text-sm text-gold-600 font-medium uppercase tracking-wide">
                         {today}&apos;s Menu
                     </p>
-                    {todays.length > 0 ? (
-                        <>
-                            <h2 className="text-2xl font-bold text-maroon-700 mt-1">
-                                {todays[0].name}
-                            </h2>
-                            {todays[0].description && (
-                                <p className="text-gray-600 mt-1">
-                                    {todays[0].description}
-                                </p>
-                            )}
-                            <p className="text-gold-600 font-semibold mt-2">
-                                Rs. {Number(todays[0].price).toFixed(0)}
-                            </p>
-                        </>
-                    ) : (
-                        <h2 className="text-xl font-semibold text-gray-600 mt-2">
-                            Check today&apos;s dish on the menu
-                        </h2>
-                    )}
+                    <h2 className="text-2xl font-bold text-maroon-700">
+                        Available Today
+                    </h2>
+                </div>
+
+                {todays.length === 0 ? (
+                    <p className="text-center text-gray-600">
+                        Check the menu for today&apos;s dish.
+                    </p>
+                ) : (
+                    <div className="grid gap-4 sm:grid-cols-2">
+                        {todays.map((item) => (
+                            <div
+                                key={item.id}
+                                className="bg-cream-50 rounded-xl shadow-sm p-5"
+                            >
+                                <h3 className="font-semibold text-gray-800">
+                                    {item.name}
+                                </h3>
+                                {item.description && (
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        {item.description}
+                                    </p>
+                                )}
+                                {isSpecial(item) ? (
+                                    <p className="text-sm text-gold-600 font-medium mt-2">
+                                        Advance order — ask for details
+                                    </p>
+                                ) : (
+                                    <p className="text-gold-600 font-semibold mt-2">
+                                        Rs. {Number(item.price).toFixed(0)}
+                                    </p>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                <div className="text-center mt-6">
                     <Link
                         to="/menu"
-                        className="inline-block mt-5 bg-maroon-700 hover:bg-maroon-800 text-white font-semibold px-6 py-2.5 rounded-lg"
+                        className="inline-block bg-maroon-700 hover:bg-maroon-800 text-white font-semibold px-6 py-2.5 rounded-lg"
                     >
                         Order now
                     </Link>
