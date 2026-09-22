@@ -11,11 +11,11 @@ import {
 import { computeDeliveryFee } from "../utils/delivery";
 
 const PAYMENT_METHODS = [
-    { key: "cash", label: "Cash" },
-    { key: "card", label: "Card" },
-    { key: "jazzcash", label: "JazzCash" },
-    { key: "easypaisa", label: "Easypaisa" },
-    { key: "online", label: "Online" },
+    { key: "cash", label: "Cash", digital: false },
+    { key: "bank_transfer", label: "Bank", digital: true },
+    { key: "jazzcash", label: "JazzCash", digital: true },
+    { key: "easypaisa", label: "Easypaisa", digital: true },
+    { key: "card", label: "Card", digital: true },
 ];
 
 export default function POS() {
@@ -26,6 +26,7 @@ export default function POS() {
     const [custName, setCustName] = useState("");
     const [custPhone, setCustPhone] = useState("");
     const [advance, setAdvance] = useState(false);
+    const [reference, setReference] = useState("");
     const [distance, setDistance] = useState("");
     // Changes in delivery charges in the code
     const [cfg, setCfg] = useState({
@@ -115,6 +116,7 @@ export default function POS() {
         setCustName("");
         setCustPhone("");
         setAdvance(false);
+        setReference("");
         setOrderType("pickup");
         setPlacedOrder(null);
         setStage("building");
@@ -153,6 +155,8 @@ export default function POS() {
             });
 
             setPlacedOrder(order);
+            // Auto-select advance when the order rules require it.
+            setAdvance(Boolean(order.advance_required));
             setStage("payment");
         } catch (err) {
             setError(err.message || "Could not place order");
@@ -161,16 +165,22 @@ export default function POS() {
         }
     }
 
+    // Advance amount comes from the backend rule (configurable percentage).
+    const advanceAmount = placedOrder
+        ? Number(placedOrder.advance_amount) ||
+          Math.round(Number(placedOrder.total_amount) / 2)
+        : 0;
+
     async function takePayment(method) {
         setError("");
         setBusy(true);
         try {
             const payload = { order_id: placedOrder.id, method };
             if (advance) {
-                // 50% advance, rounded to the rupee.
-                payload.amount = Math.round(
-                    Number(placedOrder.total_amount) / 2
-                );
+                payload.amount = advanceAmount;
+            }
+            if (reference.trim()) {
+                payload.reference = reference.trim();
             }
             await createPayment(payload);
             setStage("done");
@@ -216,7 +226,7 @@ export default function POS() {
                                 Order paid
                             </p>
                             <p className="text-sm text-gray-500 mt-1">
-                                #{placedOrder.id.slice(0, 8)} · Rs.{" "}
+                                Order #{placedOrder.order_number} · Rs.{" "}
                                 {Number(placedOrder.total_amount).toFixed(0)}
                             </p>
                             <button
@@ -379,6 +389,11 @@ export default function POS() {
 
                             {stage === "payment" && (
                                 <div className="mt-3">
+                                    {placedOrder.advance_required && (
+                                        <p className="text-xs font-medium text-maroon-900 bg-gold-100 rounded-lg px-3 py-2 mb-2">
+                                            Advance required for this order.
+                                        </p>
+                                    )}
                                     <label className="flex items-center gap-2 text-sm text-gray-700 mb-2">
                                         <input
                                             type="checkbox"
@@ -387,14 +402,17 @@ export default function POS() {
                                                 setAdvance(e.target.checked)
                                             }
                                         />
-                                        Take 50% advance (Rs.{" "}
-                                        {Math.round(
-                                            Number(
-                                                placedOrder.total_amount
-                                            ) / 2
-                                        )}
-                                        )
+                                        Take advance only (Rs. {advanceAmount})
                                     </label>
+                                    <input
+                                        type="text"
+                                        value={reference}
+                                        onChange={(e) =>
+                                            setReference(e.target.value)
+                                        }
+                                        placeholder="Transaction ref (optional)"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2"
+                                    />
                                     <p className="text-sm text-gray-600 mb-2">
                                         Take payment:
                                     </p>

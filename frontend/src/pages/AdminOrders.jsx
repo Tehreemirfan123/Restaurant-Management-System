@@ -6,7 +6,7 @@ const STATUSES = ["received", "preparing", "ready", "delivered"];
 
 const STATUS_BADGE = {
     received: "bg-blue-100 text-blue-800",
-    preparing: "bg-gold-100 text-maroon-800",
+    preparing: "bg-gold-100 text-maroon-900",
     ready: "bg-green-100 text-green-800",
     delivered: "bg-gray-100 text-gray-600",
     cancelled: "bg-red-100 text-red-700",
@@ -76,7 +76,7 @@ export default function AdminOrders() {
                             className={`px-3 py-1.5 rounded-full text-sm capitalize ${
                                 filter === f
                                     ? "bg-maroon-700 text-white"
-                                    : "bg-gold-100 text-maroon-800"
+                                    : "bg-gold-100 text-maroon-900"
                             }`}
                         >
                             {f}
@@ -98,8 +98,8 @@ export default function AdminOrders() {
                         >
                             <div className="flex items-center justify-between flex-wrap gap-2">
                                 <div>
-                                    <span className="font-mono text-sm text-gray-600">
-                                        #{order.id.slice(0, 8)}
+                                    <span className="font-semibold text-sm text-gray-700">
+                                        #{order.order_number}
                                     </span>
                                     <span
                                         className={`ml-2 text-xs px-2 py-0.5 rounded-full capitalize ${
@@ -124,6 +124,12 @@ export default function AdminOrders() {
                                         }`}
                                     >
                                         {order.payment_status || "unpaid"}
+                                        {Number(order.balance_due) > 0 &&
+                                        order.payment_status === "partial"
+                                            ? ` · bal Rs. ${Number(
+                                                  order.balance_due
+                                              ).toFixed(0)}`
+                                            : ""}
                                     </p>
                                 </div>
                             </div>

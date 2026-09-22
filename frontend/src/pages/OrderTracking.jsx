@@ -128,8 +128,8 @@ export default function OrderTracking() {
                     <>
                         <div className="bg-white rounded-xl shadow-sm p-5 mb-4">
                             <p className="text-sm text-gray-500">Order</p>
-                            <p className="font-mono text-sm text-gray-700 mb-4">
-                                #{order.id.slice(0, 8)}
+                            <p className="font-semibold text-lg text-gray-800 mb-4">
+                                #{order.order_number}
                             </p>
 
                             {/* Status stepper */}
@@ -217,8 +217,40 @@ export default function OrderTracking() {
                                 </span>
                             </div>
 
+                            {/* Payment status */}
+                            {Number(order.amount_paid) > 0 && (
+                                <div className="flex justify-between text-sm text-gray-500 mt-2">
+                                    <span>Paid</span>
+                                    <span>
+                                        Rs. {Number(order.amount_paid).toFixed(0)}
+                                    </span>
+                                </div>
+                            )}
+                            {Number(order.balance_due) > 0 && (
+                                <div className="flex justify-between text-sm font-medium text-maroon-800 mt-1">
+                                    <span>
+                                        {order.advance_required
+                                            ? `Advance due (Rs. ${Number(
+                                                  order.advance_amount
+                                              ).toFixed(0)})`
+                                            : "Balance due"}
+                                    </span>
+                                    <span>
+                                        Rs. {Number(order.balance_due).toFixed(0)}
+                                    </span>
+                                </div>
+                            )}
+                            {order.payment_status === "paid" && (
+                                <p className="text-sm text-green-600 font-medium mt-2">
+                                    ✓ Paid in full
+                                </p>
+                            )}
+
                             <p className="text-xs text-gray-400 mt-3 capitalize">
                                 {order.order_type}
+                                {order.category && order.category !== "regular"
+                                    ? ` · ${order.category}`
+                                    : ""}
                                 {order.delivery_address
                                     ? ` · ${order.delivery_address}`
                                     : ""}

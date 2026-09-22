@@ -251,6 +251,23 @@ export function createPayment(payload) {
     return request("/payments", { method: "POST", body: payload });
 }
 
+export function getPayments({ date, orderId } = {}) {
+    const params = new URLSearchParams();
+    if (date) params.set("date", date);
+    if (orderId) params.set("order_id", orderId);
+    const qs = params.toString();
+    return request(`/payments${qs ? `?${qs}` : ""}`);
+}
+
+export function getReconciliation(date) {
+    const qs = date ? `?date=${date}` : "";
+    return request(`/payments/reconciliation${qs}`);
+}
+
+export function updatePayment(id, payload) {
+    return request(`/payments/${id}`, { method: "PATCH", body: payload });
+}
+
 // ---- Settings ----
 
 export function getOrderingStatus() {

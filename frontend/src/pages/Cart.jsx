@@ -2,9 +2,13 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
 import {
+    ADVANCE_PERCENT,
     DELIVERY_BASE_KM,
     DELIVERY_FEE,
     DELIVERY_PER_KM,
+    LARGE_ORDER_THRESHOLD,
+    ORDER_CATEGORIES,
+    PAYMENT_METHODS,
 } from "../config";
 import { useCart } from "../context/CartContext";
 import { createOrder, getOrderingStatus } from "../services/api";
@@ -25,11 +29,22 @@ export default function Cart() {
     const [phone, setPhone] = useState("");
     const [distance, setDistance] = useState("");
     const [locating, setLocating] = useState(false);
+    const [category, setCategory] = useState("regular");
+    const [payMethod, setPayMethod] = useState("cash");
     // Changes in delivery charges in the code
     const [cfg, setCfg] = useState({
         baseFee: DELIVERY_FEE,
         baseKm: DELIVERY_BASE_KM,
         perKm: DELIVERY_PER_KM,
+    });
+    const [pay, setPay] = useState({
+        advancePercent: ADVANCE_PERCENT,
+        largeThreshold: LARGE_ORDER_THRESHOLD,
+        bank_name: null,
+        bank_account_name: null,
+        bank_account_number: null,
+        jazzcash_number: null,
+        easypaisa_number: null,
     });
     const [placing, setPlacing] = useState(false);
     const [error, setError] = useState("");
@@ -51,6 +66,21 @@ export default function Cart() {
                             ? Number(s.delivery_per_km)
                             : DELIVERY_PER_KM,
                 });
+                setPay({
+                    advancePercent:
+                        s?.advance_payment_percent != null
+                            ? Number(s.advance_payment_percent)
+                            : ADVANCE_PERCENT,
+                    largeThreshold:
+                        s?.large_order_threshold != null
+                            ? Number(s.large_order_threshold)
+                            : LARGE_ORDER_THRESHOLD,
+                    bank_name: s?.bank_name || null,
+                    bank_account_name: s?.bank_account_name || null,
+                    bank_account_number: s?.bank_account_number || null,
+                    jazzcash_number: s?.jazzcash_number || null,
+                    easypaisa_number: s?.easypaisa_number || null,
+                });
             })
             .catch(() => {});
     }, []);
@@ -59,6 +89,33 @@ export default function Cart() {
     const deliveryFee =
         orderType === "delivery" ? computeDeliveryFee(distance, cfg) : 0;
     const grandTotal = totalAmount + deliveryFee;
+
+    // Advance rule: custom/subscription orders, or any order at/over the
+    // large-order threshold, need an advance. Regular small orders can use COD.
+    const advanceRequired =
+        category !== "regular" ||
+        (pay.largeThreshold > 0 && grandTotal >= pay.largeThreshold);
+    const advanceAmount = advanceRequired
+        ? Math.round((grandTotal * pay.advancePercent) / 100)
+        : 0;
+    const selectedMethod = PAYMENT_METHODS.find((m) => m.key === payMethod);
+    const needsDigitalForAdvance = advanceRequired && !selectedMethod?.digital;
+
+    // Where to send an advance for the chosen digital method.
+    const payInstructions = (() => {
+        if (payMethod === "bank_transfer" && pay.bank_account_number) {
+            return `${pay.bank_name || "Bank"} — ${
+                pay.bank_account_name || ""
+            } ${pay.bank_account_number}`.trim();
+        }
+        if (payMethod === "jazzcash" && pay.jazzcash_number) {
+            return `JazzCash ${pay.jazzcash_number}`;
+        }
+        if (payMethod === "easypaisa" && pay.easypaisa_number) {
+            return `Easypaisa ${pay.easypaisa_number}`;
+        }
+        return null;
+    })();
 
     async function useMyLocation() {
         setError("");
@@ -86,6 +143,9 @@ export default function Cart() {
             phone: phone.trim(),
             deliveryFee,
             distance: orderType === "delivery" ? distance : null,
+            category,
+            paymentMethod: selectedMethod?.label,
+            advanceAmount,
         });
         window.open(url, "_blank", "noopener");
     }
@@ -101,12 +161,21 @@ export default function Cart() {
             setError("Please enter your name and phone");
             return;
         }
+        if (needsDigitalForAdvance) {
+            setError(
+                `This order needs a ${pay.advancePercent}% advance (Rs. ${advanceAmount}). ` +
+                    "Please choose Bank Transfer, JazzCash or Easypaisa to pay it."
+            );
+            return;
+        }
 
         setPlacing(true);
 
         try {
             const order = await createOrder({
                 order_type: orderType,
+                category,
+                payment_method: payMethod,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
                 // Changes in delivery charges in the code
@@ -174,7 +243,7 @@ export default function Cart() {
                                                     item.quantity - 1
                                                 )
                                             }
-                                            className="w-8 h-8 rounded-full bg-gold-100 text-maroon-800 font-bold"
+                                            className="w-8 h-8 rounded-full bg-gold-100 text-maroon-900 font-bold"
                                             aria-label="Decrease"
                                         >
                                             −
@@ -189,7 +258,7 @@ export default function Cart() {
                                                     item.quantity + 1
                                                 )
                                             }
-                                            className="w-8 h-8 rounded-full bg-gold-100 text-maroon-800 font-bold"
+                                            className="w-8 h-8 rounded-full bg-gold-100 text-maroon-900 font-bold"
                                             aria-label="Increase"
                                         >
                                             +
@@ -289,6 +358,95 @@ export default function Cart() {
                                     </p>
                                 </>
                             )}
+
+                            {/* Order kind */}
+                            <p className="text-xs font-medium text-gray-500 mb-1">
+                                Order type
+                            </p>
+                            <div className="flex flex-wrap gap-2 mb-3">
+                                {ORDER_CATEGORIES.map((c) => (
+                                    <button
+                                        key={c.key}
+                                        onClick={() => setCategory(c.key)}
+                                        className={`flex-1 min-w-24 py-2 rounded-lg text-sm font-medium ${
+                                            category === c.key
+                                                ? "bg-maroon-700 text-white"
+                                                : "bg-cream-100 text-maroon-800"
+                                        }`}
+                                    >
+                                        {c.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Payment method */}
+                            <p className="text-xs font-medium text-gray-500 mb-1">
+                                Payment method
+                            </p>
+                            <div className="grid grid-cols-2 gap-2 mb-3">
+                                {PAYMENT_METHODS.map((m) => (
+                                    <button
+                                        key={m.key}
+                                        onClick={() => setPayMethod(m.key)}
+                                        className={`py-2 rounded-lg text-sm font-medium ${
+                                            payMethod === m.key
+                                                ? "bg-maroon-700 text-white"
+                                                : "bg-cream-100 text-maroon-800"
+                                        }`}
+                                    >
+                                        {m.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Advance notice */}
+                            {advanceRequired && (
+                                <div className="mb-3 rounded-lg bg-gold-100 text-maroon-900 text-sm p-3">
+                                    <p className="font-semibold">
+                                        {pay.advancePercent}% advance required:
+                                        Rs. {advanceAmount}
+                                    </p>
+                                    <p className="mt-1 text-maroon-900">
+                                        {category === "subscription"
+                                            ? "Subscription orders"
+                                            : category === "custom"
+                                            ? "Custom orders"
+                                            : "Large orders"}{" "}
+                                        are confirmed once the advance is
+                                        received.
+                                    </p>
+                                    {selectedMethod?.digital &&
+                                        payInstructions && (
+                                            <p className="mt-2">
+                                                Send to:{" "}
+                                                <span className="font-medium">
+                                                    {payInstructions}
+                                                </span>
+                                                , then share the screenshot on
+                                                WhatsApp.
+                                            </p>
+                                        )}
+                                    {needsDigitalForAdvance && (
+                                        <p className="mt-2 text-red-700">
+                                            Choose Bank Transfer, JazzCash or
+                                            Easypaisa to pay the advance.
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Payment instructions for digital, non-advance */}
+                            {!advanceRequired &&
+                                selectedMethod?.digital &&
+                                payInstructions && (
+                                    <p className="mb-3 text-xs text-gray-500">
+                                        Send Rs. {grandTotal.toFixed(0)} to{" "}
+                                        <span className="font-medium">
+                                            {payInstructions}
+                                        </span>{" "}
+                                        and share the screenshot on WhatsApp.
+                                    </p>
+                                )}
 
                             <div className="space-y-1 text-sm text-gray-600 mb-3">
                                 <div className="flex justify-between">

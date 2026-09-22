@@ -44,6 +44,13 @@ def ordering_status(db: Session = Depends(get_db)):
         "delivery_radius_km": settings.delivery_radius_km,
         # Changes in delivery charges in the code
         "delivery_per_km": settings.delivery_per_km,
+        "advance_payment_percent": settings.advance_payment_percent,
+        "large_order_threshold": settings.large_order_threshold,
+        "bank_name": settings.bank_name,
+        "bank_account_name": settings.bank_account_name,
+        "bank_account_number": settings.bank_account_number,
+        "jazzcash_number": settings.jazzcash_number,
+        "easypaisa_number": settings.easypaisa_number,
     }
 
 

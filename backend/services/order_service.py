@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
@@ -9,11 +10,42 @@ from models.models import (
     Customer,
     MenuItem,
     Order,
+    OrderCategoryEnum,
     OrderTypeEnum,
     OrderItem,
+    Payment,
+    PaymentStatusEnum,
+    Settings,
     Table,
 )
 from schemas.schemas import OrderCreate
+
+
+def compute_advance(
+    total: Decimal,
+    category: OrderCategoryEnum,
+    settings: Settings,
+) -> tuple[bool, Decimal]:
+    """Whether an advance is required for this order, and how much.
+
+    Custom / subscription / large orders (and any order at or above the
+    configured large-order threshold) require an advance. The percentage and
+    threshold both live in Settings so the rule can change without code edits.
+    """
+    total = Decimal(total or 0)
+    threshold = settings.large_order_threshold or Decimal("0")
+    required = category in (
+        OrderCategoryEnum.custom,
+        OrderCategoryEnum.subscription,
+        OrderCategoryEnum.large,
+    ) or (threshold > 0 and total >= threshold)
+
+    if not required:
+        return False, Decimal("0")
+
+    percent = settings.advance_payment_percent or Decimal("0")
+    amount = (total * percent / Decimal("100")).quantize(Decimal("1"))
+    return True, amount
 
 
 def create_order(
@@ -131,6 +163,7 @@ def create_order(
     order = Order(
         total_amount=0,
         order_type=order_data.order_type,
+        category=order_data.category,
         delivery_fee=delivery_fee,
         delivery_address=order_data.delivery_address,
         delivery_distance_km=delivery_distance,
@@ -175,18 +208,69 @@ def create_order(
 
     order.total_amount = total_amount + delivery_fee
 
+    # If the customer picked an intended payment method, record a pending
+    # payment so it surfaces in reconciliation until staff confirm receipt.
+    # Advance-required orders record the advance amount; others the full total.
+    if order_data.payment_method is not None:
+        advance_required, advance_amount = compute_advance(
+            order.total_amount, order.category, settings
+        )
+        intended = (
+            advance_amount
+            if advance_required and advance_amount > 0
+            else order.total_amount
+        )
+        db.add(
+            Payment(
+                order=order,
+                amount=intended,
+                method=order_data.payment_method,
+                status=PaymentStatusEnum.pending,
+            )
+        )
+
     db.commit()
     db.refresh(order)
 
-    return order
+    return _annotate(order)
 
 
 def _annotate(order: Order) -> Order:
-    """Attach transient customer_name / payment_status for the API response."""
+    """Attach transient customer/payment roll-up fields for the API response."""
+    from services.settings_service import get_settings
+    from sqlalchemy.orm import object_session
+
     order.customer_name = order.customer.name if order.customer else None
-    order.payment_status = (
-        order.payment.status.value if order.payment else None
+
+    paid = sum(
+        (p.amount for p in order.payments if p.status == PaymentStatusEnum.paid),
+        Decimal("0"),
     )
+    has_refund = any(
+        p.status == PaymentStatusEnum.refunded for p in order.payments
+    )
+    total = order.total_amount or Decimal("0")
+
+    order.amount_paid = paid
+    order.balance_due = max(total - paid, Decimal("0"))
+
+    if paid <= 0:
+        order.payment_status = "refunded" if has_refund else "unpaid"
+    elif paid >= total:
+        order.payment_status = "paid"
+    else:
+        order.payment_status = "partial"
+
+    session = object_session(order)
+    if session is not None:
+        settings = get_settings(session)
+        required, amount = compute_advance(total, order.category, settings)
+        order.advance_required = required
+        order.advance_amount = amount
+    else:
+        order.advance_required = False
+        order.advance_amount = Decimal("0")
+
     return order
 
 
@@ -239,10 +323,10 @@ def cancel_order(
 
     order.status = OrderStatusEnum.cancelled
 
-    if order.payment is not None and (
-        order.payment.status == PaymentStatusEnum.paid
-    ):
-        order.payment.status = PaymentStatusEnum.refunded
+    # Refund any settled payments; drop still-pending intents.
+    for payment in order.payments:
+        if payment.status == PaymentStatusEnum.paid:
+            payment.status = PaymentStatusEnum.refunded
 
     if order.table is not None:
         order.table.status = TableStatusEnum.available

@@ -8,6 +8,7 @@ from models.models import (
     CategoryEnum,
     CustomerSegmentEnum,
     DayOfWeekEnum,
+    OrderCategoryEnum,
     OrderStatusEnum,
     OrderTypeEnum,
     PaymentMethodEnum,
@@ -94,6 +95,9 @@ class OrderCreate(BaseModel):
 
     order_type: OrderTypeEnum = OrderTypeEnum.pickup
 
+    # Regular / custom / subscription / large — drives the advance rule.
+    category: OrderCategoryEnum = OrderCategoryEnum.regular
+
     # Required when order_type is delivery (validated in the service).
     delivery_address: str | None = None
     # Distance from the kitchen (km); drives the delivery fee.
@@ -102,6 +106,10 @@ class OrderCreate(BaseModel):
     )
 
     table_id: UUID | None = None
+
+    # Optional intended payment method. When given, a pending payment is
+    # recorded so it shows up in reconciliation until it is confirmed.
+    payment_method: PaymentMethodEnum | None = None
 
     # Either link an existing customer, or pass name/phone to find-or-create
     # one so repeat orders can be tracked.
@@ -123,8 +131,10 @@ class OrderItemResponse(BaseModel):
 
 class OrderResponse(BaseModel):
     id: UUID
+    order_number: int
     status: OrderStatusEnum
     order_type: OrderTypeEnum
+    category: OrderCategoryEnum
     total_amount: Decimal
     delivery_fee: Decimal
     delivery_address: str | None
@@ -136,6 +146,11 @@ class OrderResponse(BaseModel):
     # Convenience fields for the orders view (set on the ORM object).
     customer_name: str | None = None
     payment_status: str | None = None
+    # Payment roll-up (computed in the service).
+    amount_paid: Decimal = Decimal("0")
+    balance_due: Decimal = Decimal("0")
+    advance_required: bool = False
+    advance_amount: Decimal = Decimal("0")
 
     model_config = ConfigDict(
         from_attributes=True,
@@ -150,8 +165,20 @@ class PaymentCreate(BaseModel):
 
     method: PaymentMethodEnum
 
-    # Optional partial/advance amount; defaults to the order total.
+    # Optional partial/advance amount; defaults to the outstanding balance.
     amount: Decimal | None = Field(default=None, gt=0, decimal_places=2)
+
+    # External transaction reference (bank/JazzCash/Easypaisa id, cheque no.).
+    reference: str | None = Field(default=None, max_length=120)
+    note: str | None = None
+
+
+class PaymentUpdate(BaseModel):
+    """Confirm or adjust a recorded payment during reconciliation."""
+
+    status: PaymentStatusEnum | None = None
+    reference: str | None = Field(default=None, max_length=120)
+    note: str | None = None
 
 
 class PaymentResponse(BaseModel):
@@ -160,11 +187,44 @@ class PaymentResponse(BaseModel):
     amount: Decimal
     method: PaymentMethodEnum
     status: PaymentStatusEnum
+    reference: str | None = None
+    note: str | None = None
+    created_at: datetime | None = None
     paid_at: datetime | None
+    # Reconciliation convenience fields (set on the ORM object).
+    order_number: int | None = None
+    customer_name: str | None = None
+    recorded_by: str | None = None
 
     model_config = ConfigDict(
         from_attributes=True,
     )
+
+
+class MethodTotal(BaseModel):
+    method: PaymentMethodEnum
+    count: int
+    amount: Decimal
+
+
+class OutstandingOrder(BaseModel):
+    order_id: UUID
+    order_number: int
+    customer_name: str | None
+    total_amount: Decimal
+    amount_paid: Decimal
+    balance_due: Decimal
+    advance_required: bool
+    advance_amount: Decimal
+
+
+class PaymentReconciliation(BaseModel):
+    date: str
+    total_collected: Decimal
+    payment_count: int
+    by_method: list[MethodTotal]
+    payments: list[PaymentResponse]
+    outstanding: list[OutstandingOrder]
 
 class StaffCreate(BaseModel):
     username: str = Field(
@@ -442,6 +502,18 @@ class SettingsUpdate(BaseModel):
     delivery_radius_km: Decimal | None = Field(default=None, ge=0, decimal_places=1)
     # Changes in delivery charges in the code
     delivery_per_km: Decimal | None = Field(default=None, ge=0, decimal_places=2)
+    # Payment configuration.
+    advance_payment_percent: Decimal | None = Field(
+        default=None, ge=0, le=100, decimal_places=2
+    )
+    large_order_threshold: Decimal | None = Field(
+        default=None, ge=0, decimal_places=2
+    )
+    bank_name: str | None = Field(default=None, max_length=120)
+    bank_account_name: str | None = Field(default=None, max_length=150)
+    bank_account_number: str | None = Field(default=None, max_length=60)
+    jazzcash_number: str | None = Field(default=None, max_length=30)
+    easypaisa_number: str | None = Field(default=None, max_length=30)
 
 
 class SettingsResponse(BaseModel):
@@ -454,6 +526,13 @@ class SettingsResponse(BaseModel):
     delivery_fee: Decimal
     delivery_radius_km: Decimal
     delivery_per_km: Decimal
+    advance_payment_percent: Decimal
+    large_order_threshold: Decimal
+    bank_name: str | None
+    bank_account_name: str | None
+    bank_account_number: str | None
+    jazzcash_number: str | None
+    easypaisa_number: str | None
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -471,3 +550,11 @@ class OrderingStatus(BaseModel):
     delivery_radius_km: Decimal
     # Changes in delivery charges in the code
     delivery_per_km: Decimal
+    # Public payment info so the cart can show the advance rule + accounts.
+    advance_payment_percent: Decimal
+    large_order_threshold: Decimal
+    bank_name: str | None
+    bank_account_name: str | None
+    bank_account_number: str | None
+    jazzcash_number: str | None
+    easypaisa_number: str | None

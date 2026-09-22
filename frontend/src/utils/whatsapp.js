@@ -13,6 +13,9 @@ export function buildWhatsappOrderUrl({
     phone,
     deliveryFee = DELIVERY_FEE,
     distance = null,
+    category = null,
+    paymentMethod = null,
+    advanceAmount = 0,
 }) {
     const lines = items.map(
         (i) => `- ${i.quantity} x ${i.name} (Rs. ${i.price * i.quantity})`
@@ -35,13 +38,23 @@ export function buildWhatsappOrderUrl({
     if (name) parts.push(`Name: ${name}`);
     if (phone) parts.push(`Phone: ${phone}`);
 
+    if (category && category !== "regular") {
+        parts.push(`Order: ${category}`);
+    }
+
     if (orderType === "delivery") {
         parts.push(`Address: ${address || "(to share)"}`);
         if (distance) parts.push(`Distance: ~${distance} km`);
         parts.push(`Delivery fee: Rs. ${fee}`);
     }
 
+    if (paymentMethod) parts.push(`Payment: ${paymentMethod}`);
+
     parts.push(`Total: Rs. ${subtotal + fee}`);
+
+    if (advanceAmount > 0) {
+        parts.push(`Advance to pay now: Rs. ${advanceAmount}`);
+    }
 
     const text = encodeURIComponent(parts.join("\n"));
     return `https://wa.me/${WHATSAPP_NUMBER}?text=${text}`;

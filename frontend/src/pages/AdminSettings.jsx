@@ -11,6 +11,13 @@ const EMPTY = {
     delivery_fee: "",
     delivery_radius_km: "",
     delivery_per_km: "",
+    advance_payment_percent: "",
+    large_order_threshold: "",
+    bank_name: "",
+    bank_account_name: "",
+    bank_account_number: "",
+    jazzcash_number: "",
+    easypaisa_number: "",
     accepting_orders: true,
     daily_order_cap: "",
 };
@@ -34,6 +41,17 @@ export default function AdminSettings() {
                     delivery_fee: String(s.delivery_fee ?? ""),
                     delivery_radius_km: String(s.delivery_radius_km ?? ""),
                     delivery_per_km: String(s.delivery_per_km ?? ""),
+                    advance_payment_percent: String(
+                        s.advance_payment_percent ?? ""
+                    ),
+                    large_order_threshold: String(
+                        s.large_order_threshold ?? ""
+                    ),
+                    bank_name: s.bank_name || "",
+                    bank_account_name: s.bank_account_name || "",
+                    bank_account_number: s.bank_account_number || "",
+                    jazzcash_number: s.jazzcash_number || "",
+                    easypaisa_number: s.easypaisa_number || "",
                     accepting_orders: s.accepting_orders,
                     daily_order_cap: s.daily_order_cap ?? "",
                 })
@@ -61,6 +79,17 @@ export default function AdminSettings() {
                 delivery_radius_km: Number(form.delivery_radius_km || 0),
                 // Changes in delivery charges in the code
                 delivery_per_km: Number(form.delivery_per_km || 0),
+                advance_payment_percent: Number(
+                    form.advance_payment_percent || 0
+                ),
+                large_order_threshold: Number(
+                    form.large_order_threshold || 0
+                ),
+                bank_name: form.bank_name || null,
+                bank_account_name: form.bank_account_name || null,
+                bank_account_number: form.bank_account_number || null,
+                jazzcash_number: form.jazzcash_number || null,
+                easypaisa_number: form.easypaisa_number || null,
                 accepting_orders: form.accepting_orders,
                 daily_order_cap:
                     form.daily_order_cap === ""
@@ -220,6 +249,120 @@ export default function AdminSettings() {
                             Delivery fee = base fee within the base radius, plus
                             the per-km charge for each km beyond it.
                         </p>
+                    </section>
+
+                    {/* Payments */}
+                    <section className="bg-white rounded-xl shadow-sm p-6 space-y-4">
+                        <h2 className="font-semibold text-gray-800">Payments</h2>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelCls}>
+                                    Advance required (%)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    max="100"
+                                    step="1"
+                                    className={input}
+                                    value={form.advance_payment_percent}
+                                    onChange={(e) =>
+                                        set(
+                                            "advance_payment_percent",
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelCls}>
+                                    Large-order threshold (Rs.)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="1"
+                                    className={input}
+                                    value={form.large_order_threshold}
+                                    onChange={(e) =>
+                                        set(
+                                            "large_order_threshold",
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <p className="text-xs text-gray-400">
+                            Custom / subscription orders, and any order at or
+                            above the threshold, require the advance.
+                        </p>
+
+                        <div>
+                            <label className={labelCls}>Bank name</label>
+                            <input
+                                className={input}
+                                value={form.bank_name}
+                                onChange={(e) =>
+                                    set("bank_name", e.target.value)
+                                }
+                            />
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelCls}>
+                                    Account title
+                                </label>
+                                <input
+                                    className={input}
+                                    value={form.bank_account_name}
+                                    onChange={(e) =>
+                                        set("bank_account_name", e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelCls}>
+                                    Account number / IBAN
+                                </label>
+                                <input
+                                    className={input}
+                                    value={form.bank_account_number}
+                                    onChange={(e) =>
+                                        set(
+                                            "bank_account_number",
+                                            e.target.value
+                                        )
+                                    }
+                                />
+                            </div>
+                        </div>
+                        <div className="grid grid-cols-2 gap-4">
+                            <div>
+                                <label className={labelCls}>
+                                    JazzCash number
+                                </label>
+                                <input
+                                    className={input}
+                                    value={form.jazzcash_number}
+                                    onChange={(e) =>
+                                        set("jazzcash_number", e.target.value)
+                                    }
+                                />
+                            </div>
+                            <div>
+                                <label className={labelCls}>
+                                    Easypaisa number
+                                </label>
+                                <input
+                                    className={input}
+                                    value={form.easypaisa_number}
+                                    onChange={(e) =>
+                                        set("easypaisa_number", e.target.value)
+                                    }
+                                />
+                            </div>
+                        </div>
                     </section>
 
                     {/* Ordering */}

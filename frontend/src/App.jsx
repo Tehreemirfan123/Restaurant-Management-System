@@ -11,6 +11,7 @@ import AdminDashboard from "./pages/AdminDashboard";
 import AdminInventory from "./pages/AdminInventory";
 import AdminMenu from "./pages/AdminMenu";
 import AdminOrders from "./pages/AdminOrders";
+import AdminPayments from "./pages/AdminPayments";
 import AdminRecipesPage from "./pages/AdminRecipes";
 import AdminReports from "./pages/AdminReports";
 import AdminSettings from "./pages/AdminSettings";
@@ -85,6 +86,7 @@ function App() {
                 <Route index element={<AdminDashboard />} />
                 <Route path="reports" element={<AdminReports />} />
                 <Route path="orders" element={<AdminOrders />} />
+                <Route path="payments" element={<AdminPayments />} />
                 <Route path="menu" element={<AdminMenu />} />
                 <Route path="recipes" element={<AdminRecipesPage />} />
                 <Route path="inventory" element={<AdminInventory />} />

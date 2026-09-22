@@ -9,6 +9,8 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Identity,
+    Integer,
     Numeric,
     String,
     Text,
@@ -67,6 +69,15 @@ class OrderTypeEnum(str, enum.Enum):
     delivery = "delivery"
     dine_in = "dine_in"
     takeaway = "takeaway"
+
+
+class OrderCategoryEnum(str, enum.Enum):
+    # Regular orders may pay cash on delivery. Custom / subscription orders
+    # (and any order over the large-order threshold) require an advance.
+    regular = "regular"
+    custom = "custom"
+    subscription = "subscription"
+    large = "large"
 
 
 class DayOfWeekEnum(str, enum.Enum):
@@ -200,6 +211,16 @@ class Order(Base):
         default=uuid.uuid4,
     )
 
+    # Human-friendly sequential number used on receipts and for payment
+    # reconciliation ("Order #1042"). The UUID id stays the internal key.
+    order_number: Mapped[int] = mapped_column(
+        Integer,
+        Identity(start=1001),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
+
     status: Mapped[OrderStatusEnum] = mapped_column(
         Enum(OrderStatusEnum),
         default=OrderStatusEnum.received,
@@ -209,6 +230,13 @@ class Order(Base):
     order_type: Mapped[OrderTypeEnum] = mapped_column(
         Enum(OrderTypeEnum),
         default=OrderTypeEnum.pickup,
+        nullable=False,
+    )
+
+    # Drives the advance-payment rule (see settings.advance_payment_percent).
+    category: Mapped[OrderCategoryEnum] = mapped_column(
+        Enum(OrderCategoryEnum),
+        default=OrderCategoryEnum.regular,
         nullable=False,
     )
 
@@ -257,10 +285,12 @@ class Order(Base):
         cascade="all, delete-orphan",
     )
 
-    payment: Mapped["Payment | None"] = relationship(
+    # An order can have several payments recorded against it (e.g. a 50%
+    # advance followed by the balance on delivery).
+    payments: Mapped[list["Payment"]] = relationship(
         back_populates="order",
-        uselist=False,
         cascade="all, delete-orphan",
+        order_by="Payment.created_at",
     )
 
     table: Mapped["Table | None"] = relationship(
@@ -329,7 +359,7 @@ class Payment(Base):
         PGUUID(as_uuid=True),
         ForeignKey("orders.id"),
         nullable=False,
-        unique=True,
+        index=True,
     )
 
     amount: Mapped[Decimal] = mapped_column(
@@ -348,14 +378,42 @@ class Payment(Base):
         nullable=False,
     )
 
+    # External reference (bank/JazzCash/Easypaisa transaction id, cheque no.)
+    # captured during reconciliation.
+    reference: Mapped[str | None] = mapped_column(
+        String(120),
+        nullable=True,
+    )
+
+    note: Mapped[str | None] = mapped_column(
+        Text,
+        nullable=True,
+    )
+
+    # Staff member who recorded/confirmed this payment (null for a customer's
+    # intended payment that is still pending).
+    recorded_by_id: Mapped[UUID | None] = mapped_column(
+        PGUUID(as_uuid=True),
+        ForeignKey("staff.id"),
+        nullable=True,
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        default=lambda: datetime.now(timezone.utc),
+        nullable=False,
+    )
+
     paid_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True),
         nullable=True,
     )
 
     order: Mapped["Order"] = relationship(
-        back_populates="payment",
+        back_populates="payments",
     )
+
+    recorder: Mapped["Staff | None"] = relationship()
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -691,6 +749,36 @@ class Settings(Base):
         Numeric(10, 2),
         default=Decimal("26"),
         nullable=False,
+    )
+
+    # --- Payments (configurable so requirements can change later) ---
+    # Advance required (%) for custom / subscription / large orders.
+    advance_payment_percent: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2),
+        default=Decimal("50"),
+        nullable=False,
+    )
+
+    # Orders at or above this total require an advance regardless of category.
+    large_order_threshold: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("3000"),
+        nullable=False,
+    )
+
+    # Payment account details shown to customers for bank transfer / wallets.
+    bank_name: Mapped[str | None] = mapped_column(String(120), nullable=True)
+    bank_account_name: Mapped[str | None] = mapped_column(
+        String(150), nullable=True
+    )
+    bank_account_number: Mapped[str | None] = mapped_column(
+        String(60), nullable=True
+    )
+    jazzcash_number: Mapped[str | None] = mapped_column(
+        String(30), nullable=True
+    )
+    easypaisa_number: Mapped[str | None] = mapped_column(
+        String(30), nullable=True
     )
 
     updated_at: Mapped[datetime] = mapped_column(
