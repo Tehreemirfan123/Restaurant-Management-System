@@ -42,6 +42,8 @@ def ordering_status(db: Session = Depends(get_db)):
         "address": settings.address,
         "opening_hours": settings.opening_hours,
         "delivery_radius_km": settings.delivery_radius_km,
+        # Changes in delivery charges in the code
+        "delivery_per_km": settings.delivery_per_km,
     }
 
 

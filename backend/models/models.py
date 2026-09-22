@@ -228,6 +228,12 @@ class Order(Base):
         nullable=True,
     )
 
+    # Distance used to calculate the delivery fee (km).
+    delivery_distance_km: Mapped[Decimal | None] = mapped_column(
+        Numeric(5, 1),
+        nullable=True,
+    )
+
     table_id: Mapped[UUID | None] = mapped_column(
         PGUUID(as_uuid=True),
         ForeignKey("tables.id"),
@@ -676,6 +682,14 @@ class Settings(Base):
     delivery_radius_km: Mapped[Decimal] = mapped_column(
         Numeric(5, 1),
         default=Decimal("3"),
+        nullable=False,
+    )
+
+    # Extra charge per km beyond the base delivery radius.
+    # Changes in delivery charges in the code
+    delivery_per_km: Mapped[Decimal] = mapped_column(
+        Numeric(10, 2),
+        default=Decimal("26"),
         nullable=False,
     )
 

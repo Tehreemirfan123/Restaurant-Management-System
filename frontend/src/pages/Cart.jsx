@@ -1,9 +1,17 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 
-import { DELIVERY_FEE } from "../config";
+import {
+    DELIVERY_BASE_KM,
+    DELIVERY_FEE,
+    DELIVERY_PER_KM,
+} from "../config";
 import { useCart } from "../context/CartContext";
 import { createOrder, getOrderingStatus } from "../services/api";
+import {
+    computeDeliveryFee,
+    estimateDistanceFromLocation,
+} from "../utils/delivery";
 import { buildWhatsappOrderUrl } from "../utils/whatsapp";
 
 export default function Cart() {
@@ -15,20 +23,55 @@ export default function Cart() {
     const [address, setAddress] = useState("");
     const [name, setName] = useState("");
     const [phone, setPhone] = useState("");
-    const [feeConfig, setFeeConfig] = useState(DELIVERY_FEE);
+    const [distance, setDistance] = useState("");
+    const [locating, setLocating] = useState(false);
+    // Changes in delivery charges in the code
+    const [cfg, setCfg] = useState({
+        baseFee: DELIVERY_FEE,
+        baseKm: DELIVERY_BASE_KM,
+        perKm: DELIVERY_PER_KM,
+    });
     const [placing, setPlacing] = useState(false);
     const [error, setError] = useState("");
 
     useEffect(() => {
         getOrderingStatus()
             .then((s) => {
-                if (s?.delivery_fee != null) setFeeConfig(Number(s.delivery_fee));
+                setCfg({
+                    baseFee:
+                        s?.delivery_fee != null
+                            ? Number(s.delivery_fee)
+                            : DELIVERY_FEE,
+                    baseKm:
+                        s?.delivery_radius_km != null
+                            ? Number(s.delivery_radius_km)
+                            : DELIVERY_BASE_KM,
+                    perKm:
+                        s?.delivery_per_km != null
+                            ? Number(s.delivery_per_km)
+                            : DELIVERY_PER_KM,
+                });
             })
             .catch(() => {});
     }, []);
 
-    const deliveryFee = orderType === "delivery" ? feeConfig : 0;
+    // Changes in delivery charges in the code
+    const deliveryFee =
+        orderType === "delivery" ? computeDeliveryFee(distance, cfg) : 0;
     const grandTotal = totalAmount + deliveryFee;
+
+    async function useMyLocation() {
+        setError("");
+        setLocating(true);
+        try {
+            const km = await estimateDistanceFromLocation();
+            setDistance(String(km));
+        } catch (err) {
+            setError(err.message || "Could not detect your location");
+        } finally {
+            setLocating(false);
+        }
+    }
 
     function handleWhatsappOrder() {
         if (orderType === "delivery" && !address.trim()) {
@@ -41,7 +84,8 @@ export default function Cart() {
             address: address.trim(),
             name: name.trim(),
             phone: phone.trim(),
-            deliveryFee: feeConfig,
+            deliveryFee,
+            distance: orderType === "delivery" ? distance : null,
         });
         window.open(url, "_blank", "noopener");
     }
@@ -65,6 +109,11 @@ export default function Cart() {
                 order_type: orderType,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
+                // Changes in delivery charges in the code
+                delivery_distance_km:
+                    orderType === "delivery" && distance !== ""
+                        ? Number(distance)
+                        : null,
                 customer_name: name.trim(),
                 customer_phone: phone.trim(),
                 items: items.map((i) => ({
@@ -94,7 +143,7 @@ export default function Cart() {
                             Your cart is empty.
                         </p>
                         <Link
-                            to="/"
+                            to="/menu"
                             className="text-maroon-800 font-medium hover:underline"
                         >
                             Browse the menu
@@ -203,12 +252,42 @@ export default function Cart() {
                             </div>
 
                             {orderType === "delivery" && (
-                                <textarea
-                                    value={address}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="Delivery address (within 3 km)"
-                                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3"
-                                />
+                                <>
+                                    <textarea
+                                        value={address}
+                                        onChange={(e) =>
+                                            setAddress(e.target.value)
+                                        }
+                                        placeholder="Delivery address"
+                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-2"
+                                    />
+                                    {/* Changes in delivery charges in the code */}
+                                    <div className="flex gap-2 mb-1">
+                                        <input
+                                            type="number"
+                                            min="0"
+                                            step="0.1"
+                                            value={distance}
+                                            onChange={(e) =>
+                                                setDistance(e.target.value)
+                                            }
+                                            placeholder="Distance from us (km)"
+                                            className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm"
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={useMyLocation}
+                                            disabled={locating}
+                                            className="shrink-0 text-sm border border-maroon-700 text-maroon-700 rounded-lg px-3 py-2 disabled:opacity-60"
+                                        >
+                                            {locating ? "Locating…" : "Use my location"}
+                                        </button>
+                                    </div>
+                                    <p className="text-xs text-gray-400 mb-3">
+                                        First {cfg.baseKm} km: Rs. {cfg.baseFee}.
+                                        Beyond that: Rs. {cfg.perKm}/km.
+                                    </p>
+                                </>
                             )}
 
                             <div className="space-y-1 text-sm text-gray-600 mb-3">
@@ -217,9 +296,15 @@ export default function Cart() {
                                     <span>Rs. {totalAmount.toFixed(0)}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Delivery</span>
                                     <span>
-                                        {deliveryFee
+                                        Delivery
+                                        {orderType === "delivery" &&
+                                        distance !== ""
+                                            ? ` (${distance} km)`
+                                            : ""}
+                                    </span>
+                                    <span>
+                                        {orderType === "delivery"
                                             ? `Rs. ${deliveryFee}`
                                             : "—"}
                                     </span>

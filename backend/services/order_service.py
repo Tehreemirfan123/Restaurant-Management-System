@@ -82,13 +82,24 @@ def create_order(
 
     # A delivery order needs an address and carries the configured fee.
     delivery_fee = Decimal("0")
+    delivery_distance = None
     if order_data.order_type == OrderTypeEnum.delivery:
         if not order_data.delivery_address:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="A delivery order requires a delivery address",
             )
+        # Changes in delivery charges in the code
+        # Base fee covers up to delivery_radius_km; every extra km adds
+        # delivery_per_km. All three values are configurable in Settings.
         delivery_fee = settings.delivery_fee
+        delivery_distance = order_data.delivery_distance_km
+        if (
+            delivery_distance is not None
+            and delivery_distance > settings.delivery_radius_km
+        ):
+            extra_km = delivery_distance - settings.delivery_radius_km
+            delivery_fee += extra_km * settings.delivery_per_km
 
     # Resolve the customer: an explicit id, or find-or-create by phone so
     # repeat orders are tracked even for online checkouts.
@@ -122,6 +133,7 @@ def create_order(
         order_type=order_data.order_type,
         delivery_fee=delivery_fee,
         delivery_address=order_data.delivery_address,
+        delivery_distance_km=delivery_distance,
         table_id=order_data.table_id,
         customer_id=customer_id,
     )

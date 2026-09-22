@@ -10,6 +10,7 @@ const EMPTY = {
     opening_hours: "",
     delivery_fee: "",
     delivery_radius_km: "",
+    delivery_per_km: "",
     accepting_orders: true,
     daily_order_cap: "",
 };
@@ -32,6 +33,7 @@ export default function AdminSettings() {
                     opening_hours: s.opening_hours || "",
                     delivery_fee: String(s.delivery_fee ?? ""),
                     delivery_radius_km: String(s.delivery_radius_km ?? ""),
+                    delivery_per_km: String(s.delivery_per_km ?? ""),
                     accepting_orders: s.accepting_orders,
                     daily_order_cap: s.daily_order_cap ?? "",
                 })
@@ -57,6 +59,8 @@ export default function AdminSettings() {
                 opening_hours: form.opening_hours || null,
                 delivery_fee: Number(form.delivery_fee || 0),
                 delivery_radius_km: Number(form.delivery_radius_km || 0),
+                // Changes in delivery charges in the code
+                delivery_per_km: Number(form.delivery_per_km || 0),
                 accepting_orders: form.accepting_orders,
                 daily_order_cap:
                     form.daily_order_cap === ""
@@ -179,7 +183,7 @@ export default function AdminSettings() {
                             </div>
                             <div>
                                 <label className={labelCls}>
-                                    Delivery radius (km)
+                                    Base radius (km)
                                 </label>
                                 <input
                                     type="number"
@@ -195,7 +199,27 @@ export default function AdminSettings() {
                                     }
                                 />
                             </div>
+                            {/* Changes in delivery charges in the code */}
+                            <div>
+                                <label className={labelCls}>
+                                    Extra per km beyond radius (Rs.)
+                                </label>
+                                <input
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    className={input}
+                                    value={form.delivery_per_km}
+                                    onChange={(e) =>
+                                        set("delivery_per_km", e.target.value)
+                                    }
+                                />
+                            </div>
                         </div>
+                        <p className="text-xs text-gray-400">
+                            Delivery fee = base fee within the base radius, plus
+                            the per-km charge for each km beyond it.
+                        </p>
                     </section>
 
                     {/* Ordering */}

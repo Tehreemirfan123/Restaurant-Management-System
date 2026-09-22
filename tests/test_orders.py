@@ -236,3 +236,63 @@ def test_pickup_order_has_no_fee(client, auth_headers):
     assert data["order_type"] == "pickup"
     assert data["delivery_fee"] == "0.00"
     assert data["total_amount"] == "200.00"
+
+
+# Distance-based delivery: beyond the base radius adds per-km charge
+def test_delivery_fee_scales_with_distance(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Distance Dish",
+            "description": None,
+            "price": 200,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    # 5 km with base radius 3 km, base fee 80, per-km 26 -> 80 + 2*26 = 132
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "delivery",
+            "delivery_address": "5 km away",
+            "delivery_distance_km": 5,
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 1}],
+        },
+    )
+
+    assert response.status_code == 201
+    data = response.json()
+    assert float(data["delivery_fee"]) == 132
+    assert float(data["total_amount"]) == 332  # 200 + 132
+    assert float(data["delivery_distance_km"]) == 5
+
+
+def test_delivery_within_radius_is_base_fee(client, auth_headers):
+    menu_item = client.post(
+        "/menu",
+        headers=auth_headers,
+        json={
+            "name": "Near Dish",
+            "description": None,
+            "price": 200,
+            "category": "mains",
+            "image_url": None,
+            "available": True,
+        },
+    ).json()
+
+    response = client.post(
+        "/orders",
+        json={
+            "order_type": "delivery",
+            "delivery_address": "2 km away",
+            "delivery_distance_km": 2,
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 1}],
+        },
+    )
+    assert response.status_code == 201
+    assert float(response.json()["delivery_fee"]) == 80

@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 
 import StaffHeader from "../components/StaffHeader";
-import { DELIVERY_FEE } from "../config";
+import { DELIVERY_BASE_KM, DELIVERY_FEE, DELIVERY_PER_KM } from "../config";
 import {
     createOrder,
     createPayment,
     getMenu,
     getOrderingStatus,
 } from "../services/api";
+import { computeDeliveryFee } from "../utils/delivery";
 
 const PAYMENT_METHODS = [
     { key: "cash", label: "Cash" },
@@ -25,7 +26,13 @@ export default function POS() {
     const [custName, setCustName] = useState("");
     const [custPhone, setCustPhone] = useState("");
     const [advance, setAdvance] = useState(false);
-    const [feeConfig, setFeeConfig] = useState(DELIVERY_FEE);
+    const [distance, setDistance] = useState("");
+    // Changes in delivery charges in the code
+    const [cfg, setCfg] = useState({
+        baseFee: DELIVERY_FEE,
+        baseKm: DELIVERY_BASE_KM,
+        perKm: DELIVERY_PER_KM,
+    });
     const [error, setError] = useState("");
 
     // Workflow: "building" -> place order -> "payment" -> "done"
@@ -39,8 +46,20 @@ export default function POS() {
             .catch((err) => setError(err.message || "Failed to load menu"));
         getOrderingStatus()
             .then((s) => {
-                if (s?.delivery_fee != null)
-                    setFeeConfig(Number(s.delivery_fee));
+                setCfg({
+                    baseFee:
+                        s?.delivery_fee != null
+                            ? Number(s.delivery_fee)
+                            : DELIVERY_FEE,
+                    baseKm:
+                        s?.delivery_radius_km != null
+                            ? Number(s.delivery_radius_km)
+                            : DELIVERY_BASE_KM,
+                    perKm:
+                        s?.delivery_per_km != null
+                            ? Number(s.delivery_per_km)
+                            : DELIVERY_PER_KM,
+                });
             })
             .catch(() => {});
     }, []);
@@ -50,7 +69,9 @@ export default function POS() {
         [lines]
     );
 
-    const deliveryFee = orderType === "delivery" ? feeConfig : 0;
+    // Changes in delivery charges in the code
+    const deliveryFee =
+        orderType === "delivery" ? computeDeliveryFee(distance, cfg) : 0;
     const total = subtotal + deliveryFee;
 
     function addLine(item) {
@@ -90,6 +111,7 @@ export default function POS() {
     function resetOrder() {
         setLines([]);
         setAddress("");
+        setDistance("");
         setCustName("");
         setCustPhone("");
         setAdvance(false);
@@ -117,6 +139,11 @@ export default function POS() {
                 order_type: orderType,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
+                // Changes in delivery charges in the code
+                delivery_distance_km:
+                    orderType === "delivery" && distance !== ""
+                        ? Number(distance)
+                        : null,
                 customer_name: custName.trim() || null,
                 customer_phone: custPhone.trim() || null,
                 items: lines.map((l) => ({
@@ -223,13 +250,30 @@ export default function POS() {
                             </div>
 
                             {orderType === "delivery" && (
-                                <textarea
-                                    value={address}
-                                    disabled={stage !== "building"}
-                                    onChange={(e) => setAddress(e.target.value)}
-                                    placeholder="Delivery address"
-                                    className="mb-3 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
-                                />
+                                <>
+                                    <textarea
+                                        value={address}
+                                        disabled={stage !== "building"}
+                                        onChange={(e) =>
+                                            setAddress(e.target.value)
+                                        }
+                                        placeholder="Delivery address"
+                                        className="mb-2 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
+                                    />
+                                    {/* Changes in delivery charges in the code */}
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.1"
+                                        value={distance}
+                                        disabled={stage !== "building"}
+                                        onChange={(e) =>
+                                            setDistance(e.target.value)
+                                        }
+                                        placeholder="Distance (km)"
+                                        className="mb-3 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm disabled:opacity-60"
+                                    />
+                                </>
                             )}
 
                             {/* Optional customer capture for repeat tracking */}

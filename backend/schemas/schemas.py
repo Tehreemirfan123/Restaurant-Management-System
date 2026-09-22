@@ -96,6 +96,10 @@ class OrderCreate(BaseModel):
 
     # Required when order_type is delivery (validated in the service).
     delivery_address: str | None = None
+    # Distance from the kitchen (km); drives the delivery fee.
+    delivery_distance_km: Decimal | None = Field(
+        default=None, ge=0, decimal_places=1
+    )
 
     table_id: UUID | None = None
 
@@ -124,6 +128,7 @@ class OrderResponse(BaseModel):
     total_amount: Decimal
     delivery_fee: Decimal
     delivery_address: str | None
+    delivery_distance_km: Decimal | None
     table_id: UUID | None
     customer_id: UUID | None
     created_at: datetime
@@ -435,6 +440,8 @@ class SettingsUpdate(BaseModel):
     opening_hours: str | None = Field(default=None, max_length=120)
     delivery_fee: Decimal | None = Field(default=None, ge=0, decimal_places=2)
     delivery_radius_km: Decimal | None = Field(default=None, ge=0, decimal_places=1)
+    # Changes in delivery charges in the code
+    delivery_per_km: Decimal | None = Field(default=None, ge=0, decimal_places=2)
 
 
 class SettingsResponse(BaseModel):
@@ -446,6 +453,7 @@ class SettingsResponse(BaseModel):
     opening_hours: str | None
     delivery_fee: Decimal
     delivery_radius_km: Decimal
+    delivery_per_km: Decimal
 
     model_config = ConfigDict(from_attributes=True)
 
@@ -461,3 +469,5 @@ class OrderingStatus(BaseModel):
     address: str | None
     opening_hours: str | None
     delivery_radius_km: Decimal
+    # Changes in delivery charges in the code
+    delivery_per_km: Decimal

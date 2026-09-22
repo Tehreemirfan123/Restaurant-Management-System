@@ -12,6 +12,7 @@ export function buildWhatsappOrderUrl({
     name,
     phone,
     deliveryFee = DELIVERY_FEE,
+    distance = null,
 }) {
     const lines = items.map(
         (i) => `- ${i.quantity} x ${i.name} (Rs. ${i.price * i.quantity})`
@@ -36,6 +37,7 @@ export function buildWhatsappOrderUrl({
 
     if (orderType === "delivery") {
         parts.push(`Address: ${address || "(to share)"}`);
+        if (distance) parts.push(`Distance: ~${distance} km`);
         parts.push(`Delivery fee: Rs. ${fee}`);
     }
 
