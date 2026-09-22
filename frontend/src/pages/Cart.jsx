@@ -8,6 +8,7 @@ import {
     DELIVERY_PER_KM,
     LARGE_ORDER_THRESHOLD,
     ORDER_CATEGORIES,
+    PAYMENT_GATEWAY_ENABLED,
     PAYMENT_METHODS,
 } from "../config";
 import { useCart } from "../context/CartContext";
@@ -105,18 +106,30 @@ export default function Cart() {
         : 0;
     const selectedMethod = PAYMENT_METHODS.find((m) => m.key === payMethod);
     const needsDigitalForAdvance = advanceRequired && !selectedMethod?.digital;
-    // JazzCash / Easypaisa are paid through the gateway; cash and bank transfer
-    // are settled manually (COD or a transfer the staff reconcile later).
-    const onlineMethod = payMethod === "jazzcash" || payMethod === "easypaisa";
+    // Gateway is off for now, so JazzCash/Easypaisa/bank are arranged over
+    // WhatsApp. Flip PAYMENT_GATEWAY_ENABLED to bring back hosted checkout.
+    const onlineMethod =
+        PAYMENT_GATEWAY_ENABLED &&
+        (payMethod === "jazzcash" || payMethod === "easypaisa");
+    // Any non-cash method is settled over WhatsApp while the gateway is off.
+    const arrangeViaWhatsapp = selectedMethod?.digital && !onlineMethod;
 
-    // Bank transfer is settled manually, so show the account to send to.
-    // (JazzCash / Easypaisa are handled by the gateway, not a manual transfer.)
-    const payInstructions =
-        payMethod === "bank_transfer" && pay.bank_account_number
-            ? `${pay.bank_name || "Bank"} — ${
-                  pay.bank_account_name || ""
-              } ${pay.bank_account_number}`.trim()
-            : null;
+    // Account to send a manual payment to, for the chosen method (if set up
+    // in Admin -> Settings).
+    const payInstructions = (() => {
+        if (payMethod === "bank_transfer" && pay.bank_account_number) {
+            return `${pay.bank_name || "Bank"} — ${
+                pay.bank_account_name || ""
+            } ${pay.bank_account_number}`.trim();
+        }
+        if (payMethod === "jazzcash" && pay.jazzcash_number) {
+            return `JazzCash ${pay.jazzcash_number}`;
+        }
+        if (payMethod === "easypaisa" && pay.easypaisa_number) {
+            return `Easypaisa ${pay.easypaisa_number}`;
+        }
+        return null;
+    })();
 
     async function useMyLocation() {
         setError("");
@@ -434,13 +447,19 @@ export default function Cart() {
                                         are confirmed once the advance is
                                         received.
                                     </p>
-                                    {payInstructions && (
+                                    {arrangeViaWhatsapp && payInstructions && (
                                         <p className="mt-2">
-                                            Send to:{" "}
+                                            Send the advance to:{" "}
                                             <span className="font-medium">
                                                 {payInstructions}
                                             </span>
                                             , then share the screenshot on
+                                            WhatsApp.
+                                        </p>
+                                    )}
+                                    {arrangeViaWhatsapp && !payInstructions && (
+                                        <p className="mt-2">
+                                            Arrange the advance with us on
                                             WhatsApp.
                                         </p>
                                     )}
@@ -461,13 +480,22 @@ export default function Cart() {
                             )}
 
                             {/* Payment instructions for non-advance orders */}
-                            {!advanceRequired && payInstructions && (
+                            {!advanceRequired && arrangeViaWhatsapp && (
                                 <p className="mb-3 text-xs text-gray-500">
-                                    Send Rs. {grandTotal.toFixed(0)} to{" "}
-                                    <span className="font-medium">
-                                        {payInstructions}
-                                    </span>{" "}
-                                    and share the screenshot on WhatsApp.
+                                    {payInstructions ? (
+                                        <>
+                                            Send Rs. {grandTotal.toFixed(0)} to{" "}
+                                            <span className="font-medium">
+                                                {payInstructions}
+                                            </span>{" "}
+                                            and share the screenshot on WhatsApp.
+                                        </>
+                                    ) : (
+                                        <>
+                                            Arrange your {selectedMethod.label}{" "}
+                                            payment with us on WhatsApp.
+                                        </>
+                                    )}
                                 </p>
                             )}
                             {!advanceRequired && onlineMethod && (
@@ -517,7 +545,7 @@ export default function Cart() {
                             </button>
 
                             <p className="text-center text-xs text-gray-400 my-2">
-                                or place it online
+                                or place your order here
                             </p>
 
                             {onlineMethod ? (

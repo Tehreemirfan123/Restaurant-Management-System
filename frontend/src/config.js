@@ -33,3 +33,9 @@ export const ORDER_CATEGORIES = [
 // Fallback advance rule (live values come from /settings/status).
 export const ADVANCE_PERCENT = 50;
 export const LARGE_ORDER_THRESHOLD = 3000;
+
+// Online payment gateway is turned off for now: we take Cash on Delivery, and
+// JazzCash / Easypaisa / bank transfers are arranged over WhatsApp. The
+// gateway (hosted checkout) is fully built — flip this to true to bring the
+// "pay now" flow back in the cart.
+export const PAYMENT_GATEWAY_ENABLED = false;
