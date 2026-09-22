@@ -379,9 +379,25 @@ class Payment(Base):
     )
 
     # External reference (bank/JazzCash/Easypaisa transaction id, cheque no.)
-    # captured during reconciliation.
+    # captured during reconciliation or returned by the payment gateway.
     reference: Mapped[str | None] = mapped_column(
         String(120),
+        nullable=True,
+    )
+
+    # Our own unique reference for a gateway checkout attempt (sent to the
+    # gateway and echoed back in its callback so we can match the payment).
+    transaction_ref: Mapped[str | None] = mapped_column(
+        String(64),
+        nullable=True,
+        unique=True,
+        index=True,
+    )
+
+    # Which gateway processed this payment (sandbox / jazzcash / easypaisa),
+    # or null for a manually recorded payment.
+    gateway: Mapped[str | None] = mapped_column(
+        String(30),
         nullable=True,
     )
 

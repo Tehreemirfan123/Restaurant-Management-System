@@ -11,11 +11,16 @@ import {
     PAYMENT_METHODS,
 } from "../config";
 import { useCart } from "../context/CartContext";
-import { createOrder, getOrderingStatus } from "../services/api";
+import {
+    createOrder,
+    getOrderingStatus,
+    startCheckout,
+} from "../services/api";
 import {
     computeDeliveryFee,
     estimateDistanceFromLocation,
 } from "../utils/delivery";
+import { redirectToGateway } from "../utils/gateway";
 import { buildWhatsappOrderUrl } from "../utils/whatsapp";
 
 export default function Cart() {
@@ -100,22 +105,18 @@ export default function Cart() {
         : 0;
     const selectedMethod = PAYMENT_METHODS.find((m) => m.key === payMethod);
     const needsDigitalForAdvance = advanceRequired && !selectedMethod?.digital;
+    // JazzCash / Easypaisa are paid through the gateway; cash and bank transfer
+    // are settled manually (COD or a transfer the staff reconcile later).
+    const onlineMethod = payMethod === "jazzcash" || payMethod === "easypaisa";
 
-    // Where to send an advance for the chosen digital method.
-    const payInstructions = (() => {
-        if (payMethod === "bank_transfer" && pay.bank_account_number) {
-            return `${pay.bank_name || "Bank"} — ${
-                pay.bank_account_name || ""
-            } ${pay.bank_account_number}`.trim();
-        }
-        if (payMethod === "jazzcash" && pay.jazzcash_number) {
-            return `JazzCash ${pay.jazzcash_number}`;
-        }
-        if (payMethod === "easypaisa" && pay.easypaisa_number) {
-            return `Easypaisa ${pay.easypaisa_number}`;
-        }
-        return null;
-    })();
+    // Bank transfer is settled manually, so show the account to send to.
+    // (JazzCash / Easypaisa are handled by the gateway, not a manual transfer.)
+    const payInstructions =
+        payMethod === "bank_transfer" && pay.bank_account_number
+            ? `${pay.bank_name || "Bank"} — ${
+                  pay.bank_account_name || ""
+              } ${pay.bank_account_number}`.trim()
+            : null;
 
     async function useMyLocation() {
         setError("");
@@ -150,7 +151,7 @@ export default function Cart() {
         window.open(url, "_blank", "noopener");
     }
 
-    async function handleCheckout() {
+    async function placeOrder(online) {
         setError("");
 
         if (orderType === "delivery" && !address.trim()) {
@@ -161,7 +162,9 @@ export default function Cart() {
             setError("Please enter your name and phone");
             return;
         }
-        if (needsDigitalForAdvance) {
+        // For a manual (non-gateway) checkout, an advance order must use a
+        // digital method. The online path always satisfies this.
+        if (!online && needsDigitalForAdvance) {
             setError(
                 `This order needs a ${pay.advancePercent}% advance (Rs. ${advanceAmount}). ` +
                     "Please choose Bank Transfer, JazzCash or Easypaisa to pay it."
@@ -175,7 +178,9 @@ export default function Cart() {
             const order = await createOrder({
                 order_type: orderType,
                 category,
-                payment_method: payMethod,
+                // Online orders record the payment via the gateway callback,
+                // so we don't also create a pending "intent" here.
+                payment_method: online ? null : payMethod,
                 delivery_address:
                     orderType === "delivery" ? address.trim() : null,
                 // Changes in delivery charges in the code
@@ -191,14 +196,28 @@ export default function Cart() {
                 })),
             });
 
+            if (online) {
+                // Hand off to the gateway; it returns the customer to the
+                // order page after paying.
+                const checkout = await startCheckout({
+                    order_id: order.id,
+                    method: payMethod,
+                });
+                clearCart();
+                redirectToGateway(checkout);
+                return;
+            }
+
             clearCart();
             navigate(`/order/${order.id}`, { replace: true });
         } catch (err) {
             setError(err.message || "Could not place your order");
-        } finally {
             setPlacing(false);
         }
     }
+
+    const handleCheckout = () => placeOrder(false);
+    const handlePayOnline = () => placeOrder(true);
 
     return (
             <main className="max-w-2xl mx-auto p-4 py-8">
@@ -415,17 +434,23 @@ export default function Cart() {
                                         are confirmed once the advance is
                                         received.
                                     </p>
-                                    {selectedMethod?.digital &&
-                                        payInstructions && (
-                                            <p className="mt-2">
-                                                Send to:{" "}
-                                                <span className="font-medium">
-                                                    {payInstructions}
-                                                </span>
-                                                , then share the screenshot on
-                                                WhatsApp.
-                                            </p>
-                                        )}
+                                    {payInstructions && (
+                                        <p className="mt-2">
+                                            Send to:{" "}
+                                            <span className="font-medium">
+                                                {payInstructions}
+                                            </span>
+                                            , then share the screenshot on
+                                            WhatsApp.
+                                        </p>
+                                    )}
+                                    {onlineMethod && (
+                                        <p className="mt-2">
+                                            You&apos;ll be redirected to pay the
+                                            advance securely via{" "}
+                                            {selectedMethod.label}.
+                                        </p>
+                                    )}
                                     {needsDigitalForAdvance && (
                                         <p className="mt-2 text-red-700">
                                             Choose Bank Transfer, JazzCash or
@@ -435,18 +460,22 @@ export default function Cart() {
                                 </div>
                             )}
 
-                            {/* Payment instructions for digital, non-advance */}
-                            {!advanceRequired &&
-                                selectedMethod?.digital &&
-                                payInstructions && (
-                                    <p className="mb-3 text-xs text-gray-500">
-                                        Send Rs. {grandTotal.toFixed(0)} to{" "}
-                                        <span className="font-medium">
-                                            {payInstructions}
-                                        </span>{" "}
-                                        and share the screenshot on WhatsApp.
-                                    </p>
-                                )}
+                            {/* Payment instructions for non-advance orders */}
+                            {!advanceRequired && payInstructions && (
+                                <p className="mb-3 text-xs text-gray-500">
+                                    Send Rs. {grandTotal.toFixed(0)} to{" "}
+                                    <span className="font-medium">
+                                        {payInstructions}
+                                    </span>{" "}
+                                    and share the screenshot on WhatsApp.
+                                </p>
+                            )}
+                            {!advanceRequired && onlineMethod && (
+                                <p className="mb-3 text-xs text-gray-500">
+                                    You&apos;ll be redirected to pay securely via{" "}
+                                    {selectedMethod.label}.
+                                </p>
+                            )}
 
                             <div className="space-y-1 text-sm text-gray-600 mb-3">
                                 <div className="flex justify-between">
@@ -491,13 +520,31 @@ export default function Cart() {
                                 or place it online
                             </p>
 
-                            <button
-                                onClick={handleCheckout}
-                                disabled={placing}
-                                className="w-full border border-maroon-700 text-maroon-700 hover:bg-cream-100 disabled:opacity-60 font-semibold py-3 rounded-lg"
-                            >
-                                {placing ? "Placing order..." : "Place Order"}
-                            </button>
+                            {onlineMethod ? (
+                                <button
+                                    onClick={handlePayOnline}
+                                    disabled={placing}
+                                    className="w-full bg-maroon-700 hover:bg-maroon-800 disabled:opacity-60 text-white font-semibold py-3 rounded-lg"
+                                >
+                                    {placing
+                                        ? "Redirecting…"
+                                        : `Place order & pay ${
+                                              advanceRequired
+                                                  ? `advance Rs. ${advanceAmount}`
+                                                  : `Rs. ${grandTotal.toFixed(
+                                                        0
+                                                    )}`
+                                          }`}
+                                </button>
+                            ) : (
+                                <button
+                                    onClick={handleCheckout}
+                                    disabled={placing}
+                                    className="w-full border border-maroon-700 text-maroon-700 hover:bg-cream-100 disabled:opacity-60 font-semibold py-3 rounded-lg"
+                                >
+                                    {placing ? "Placing order..." : "Place Order"}
+                                </button>
+                            )}
                         </div>
                     </>
                 )}

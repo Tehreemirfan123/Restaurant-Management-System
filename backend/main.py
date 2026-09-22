@@ -10,6 +10,7 @@ from routers.customers import router as customers_router
 from routers.inventory import router as inventory_router
 from routers.menu import router as menu_router
 from routers.orders import router as orders_router
+from routers.payment_gateway import router as payment_gateway_router
 from routers.payments import router as payment_router
 from routers.recipes import router as recipes_router
 from routers.reports import router as reports_router
@@ -45,6 +46,8 @@ app.add_middleware(
 app.include_router(auth_router)
 app.include_router(menu_router)
 app.include_router(orders_router)
+# Public gateway endpoints first, then the staff-only payments router.
+app.include_router(payment_gateway_router)
 app.include_router(payment_router)
 app.include_router(customers_router)
 app.include_router(tables_router)

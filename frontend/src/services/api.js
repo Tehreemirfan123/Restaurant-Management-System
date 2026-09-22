@@ -268,6 +268,19 @@ export function updatePayment(id, payload) {
     return request(`/payments/${id}`, { method: "PATCH", body: payload });
 }
 
+// Start a gateway checkout for an order; returns where/how to send the payer.
+export function startCheckout(payload) {
+    return request("/payments/checkout", {
+        method: "POST",
+        body: payload,
+        auth: false,
+    });
+}
+
+export function getCheckoutStatus(txnRef) {
+    return request(`/payments/checkout/${txnRef}/status`, { auth: false });
+}
+
 // ---- Settings ----
 
 export function getOrderingStatus() {

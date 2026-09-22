@@ -181,6 +181,27 @@ class PaymentUpdate(BaseModel):
     note: str | None = None
 
 
+class CheckoutRequest(BaseModel):
+    order_id: UUID
+    method: PaymentMethodEnum
+
+
+class CheckoutResponse(BaseModel):
+    provider: str
+    http_method: str
+    checkout_url: str
+    fields: dict[str, str]
+    transaction_ref: str
+    amount: Decimal
+
+
+class CheckoutStatus(BaseModel):
+    transaction_ref: str
+    status: PaymentStatusEnum
+    order_id: UUID
+    amount: Decimal
+
+
 class PaymentResponse(BaseModel):
     id: UUID
     order_id: UUID
@@ -189,6 +210,8 @@ class PaymentResponse(BaseModel):
     status: PaymentStatusEnum
     reference: str | None = None
     note: str | None = None
+    transaction_ref: str | None = None
+    gateway: str | None = None
     created_at: datetime | None = None
     paid_at: datetime | None
     # Reconciliation convenience fields (set on the ORM object).

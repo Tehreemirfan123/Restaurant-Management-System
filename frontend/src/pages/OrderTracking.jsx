@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import {
     getMenu,
@@ -17,6 +17,9 @@ const STEPS = [
 
 export default function OrderTracking() {
     const { id } = useParams();
+    const [searchParams] = useSearchParams();
+    // Set by the gateway callback redirect: ?paid=1 (success) or ?paid=0.
+    const paidParam = searchParams.get("paid");
 
     const [order, setOrder] = useState(null);
     const [names, setNames] = useState({});
@@ -126,6 +129,18 @@ export default function OrderTracking() {
 
                 {order && !error && (
                     <>
+                        {paidParam === "1" && (
+                            <div className="bg-green-100 text-green-800 rounded-xl p-4 mb-4 text-sm font-medium">
+                                ✓ Payment received. Thank you!
+                            </div>
+                        )}
+                        {paidParam === "0" && (
+                            <div className="bg-red-100 text-red-700 rounded-xl p-4 mb-4 text-sm font-medium">
+                                Payment was not completed. You can try again or
+                                pay on delivery.
+                            </div>
+                        )}
+
                         <div className="bg-white rounded-xl shadow-sm p-5 mb-4">
                             <p className="text-sm text-gray-500">Order</p>
                             <p className="font-semibold text-lg text-gray-800 mb-4">
