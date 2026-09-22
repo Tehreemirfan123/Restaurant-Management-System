@@ -3,6 +3,7 @@ import { Link, NavLink, Outlet, useLocation } from "react-router-dom";
 
 import { DISPLAY_PHONE } from "../config";
 import { useCart } from "../context/CartContext";
+import { useTheme } from "../context/ThemeContext";
 import { getOrderingStatus } from "../services/api";
 import { whatsappUrl } from "../utils/whatsapp";
 
@@ -15,6 +16,7 @@ const LINKS = [
 
 export default function CustomerLayout() {
     const { totalItems } = useCart();
+    const { theme, toggleTheme } = useTheme();
     const [info, setInfo] = useState(null);
     const [menuOpen, setMenuOpen] = useState(false);
     const location = useLocation();
@@ -68,6 +70,22 @@ export default function CustomerLayout() {
                                 </NavLink>
                             ))}
                         </nav>
+
+                        {/* Theme toggle (always visible) */}
+                        <button
+                            onClick={toggleTheme}
+                            aria-label={
+                                theme === "dark"
+                                    ? "Switch to light mode"
+                                    : "Switch to dark mode"
+                            }
+                            title={
+                                theme === "dark" ? "Light mode" : "Dark mode"
+                            }
+                            className="bg-white/15 hover:bg-white/25 rounded-lg p-2 text-base leading-none"
+                        >
+                            {theme === "dark" ? "☀️" : "🌙"}
+                        </button>
 
                         {/* Cart (always visible) */}
                         <Link

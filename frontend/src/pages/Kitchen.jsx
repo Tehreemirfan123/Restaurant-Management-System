@@ -18,7 +18,7 @@ const NEXT_LABEL = {
 
 const STATUS_BADGE = {
     received: "bg-blue-100 text-blue-800",
-    preparing: "bg-gold-100 text-maroon-800",
+    preparing: "bg-gold-100 text-maroon-900",
     ready: "bg-green-100 text-green-800",
 };
 
