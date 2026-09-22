@@ -49,7 +49,9 @@ def create_new_order(
 )
 def read_orders(
     db: Session = Depends(get_db),
+    _: object = Depends(get_current_staff),
 ):
+    # Staff-only: the full list exposes customer names, phones and addresses.
     return get_orders(db)
 
 

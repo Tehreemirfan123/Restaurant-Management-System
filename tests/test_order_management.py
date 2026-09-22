@@ -53,6 +53,11 @@ def test_advance_payment_records_partial_amount(client, auth_headers):
     assert resp.json()["method"] == "jazzcash"
 
 
+def test_orders_list_requires_auth(client):
+    # The full list exposes customer PII, so it must be staff-only.
+    assert client.get("/orders").status_code == 401
+
+
 def test_status_change_requires_auth(client, auth_headers):
     order = _order(client, auth_headers)
     resp = client.patch(
