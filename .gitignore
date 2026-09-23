@@ -27,6 +27,9 @@ Thumbs.db
 # Logs
 *.log
 
+# FastAPI Cloud — links the local dir to your account's app (not for the repo)
+.fastapicloud/
+
 # Docs (deployment runbooks kept out of the public repo)
 docs/DEPLOYMENT.md
 docs/PORTFOLIO_DEPLOYMENT.md

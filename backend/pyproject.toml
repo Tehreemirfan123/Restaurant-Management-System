@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mehak-kitchen-backend"
+version = "1.0.0"
+description = "Mehak's Kitchen — Restaurant Management System API (FastAPI)"
+requires-python = ">=3.10"
+dependencies = [
+    "fastapi[standard]==0.141.1",
+    "uvicorn==0.53.0",
+    "sqlalchemy==2.0.53",
+    "alembic==1.20.0",
+    "psycopg2-binary==2.9.13",
+    "pyjwt==2.14.0",
+    "bcrypt==5.0.0",
+    "python-dotenv==1.2.3",
+    "python-multipart==0.0.32",
+    "slowapi==0.1.9",
+    "pyyaml==6.0.3",
+    "pydantic==2.13.5",
+]
+
+# The backend is a flat app (not a library), so tell the build exactly which
+# top-level module and packages to include — this resolves the "multiple
+# top-level packages" discovery error on FastAPI Cloud.
+[tool.setuptools]
+py-modules = ["main"]
+packages = ["core", "database", "dependencies", "models", "routers", "schemas", "services"]
