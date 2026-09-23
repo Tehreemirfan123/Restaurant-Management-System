@@ -18,6 +18,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from core import config
+from core.rate_limit import limiter
 from database.database import get_db
 from models.models import Order, Payment
 from schemas.schemas import CheckoutRequest, CheckoutResponse, CheckoutStatus
@@ -32,7 +33,10 @@ router = APIRouter(prefix="/payments", tags=["Payment gateway"])
 
 
 @router.post("/checkout", response_model=CheckoutResponse)
-def start_checkout(data: CheckoutRequest, db: Session = Depends(get_db)):
+@limiter.limit("20/minute")
+def start_checkout(
+    request: Request, data: CheckoutRequest, db: Session = Depends(get_db)
+):
     order = db.get(Order, data.order_id)
     if order is None:
         raise HTTPException(

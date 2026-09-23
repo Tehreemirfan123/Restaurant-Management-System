@@ -10,6 +10,7 @@ Run from the backend/ directory:
     python clean_data.py --yes      # skip the prompt (for scripts)
 """
 
+import os
 import sys
 
 from database.database import SessionLocal
@@ -35,6 +36,11 @@ WIPE = [
 
 
 def clean(confirm: bool = True) -> None:
+    # Hard stop: never let this destructive helper run against production.
+    if os.getenv("APP_ENV", "development").lower() == "production":
+        print("Refusing to run in production (APP_ENV=production).")
+        sys.exit(1)
+
     db = SessionLocal()
     try:
         counts = {label: db.query(model).count() for label, model in WIPE}

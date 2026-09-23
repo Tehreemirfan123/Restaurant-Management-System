@@ -6,6 +6,8 @@ import jwt
 from core.config import (
     ACCESS_TOKEN_EXPIRE_MINUTES,
     JWT_ALGORITHM,
+    JWT_AUDIENCE,
+    JWT_ISSUER,
     SECRET_KEY,
 )
 
@@ -41,6 +43,8 @@ def create_access_token(
         "sub": subject,
         "role": role,
         "exp": expire,
+        "iss": JWT_ISSUER,
+        "aud": JWT_AUDIENCE,
     }
 
     return jwt.encode(
@@ -51,8 +55,12 @@ def create_access_token(
 
 
 def decode_access_token(token: str) -> dict:
+    # Validating issuer + audience prevents a token minted for another service
+    # (or with a different config) from being accepted here.
     return jwt.decode(
         token,
         SECRET_KEY,
         algorithms=[JWT_ALGORITHM],
+        issuer=JWT_ISSUER,
+        audience=JWT_AUDIENCE,
     )

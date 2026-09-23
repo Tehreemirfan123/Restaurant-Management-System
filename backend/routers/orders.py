@@ -1,8 +1,9 @@
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, status
 from sqlalchemy.orm import Session
 
+from core.rate_limit import limiter
 from database.database import get_db
 from dependencies.auth import get_current_staff
 from models.models import OrderFeedback
@@ -33,7 +34,9 @@ router = APIRouter(
     response_model=OrderResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("20/minute")
 def create_new_order(
+    request: Request,
     order_data: OrderCreate,
     db: Session = Depends(get_db),
 ):
@@ -50,9 +53,11 @@ def create_new_order(
 def read_orders(
     db: Session = Depends(get_db),
     _: object = Depends(get_current_staff),
+    limit: int = Query(default=500, ge=1, le=1000),
+    offset: int = Query(default=0, ge=0),
 ):
     # Staff-only: the full list exposes customer names, phones and addresses.
-    return get_orders(db)
+    return get_orders(db, limit=limit, offset=offset)
 
 
 @router.get(
@@ -149,7 +154,9 @@ def read_feedback(order_id: UUID, db: Session = Depends(get_db)):
     response_model=FeedbackResponse,
     status_code=status.HTTP_201_CREATED,
 )
+@limiter.limit("20/minute")
 def submit_feedback(
+    request: Request,
     order_id: UUID,
     feedback_data: FeedbackCreate,
     db: Session = Depends(get_db),

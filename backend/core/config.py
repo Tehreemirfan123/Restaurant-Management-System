@@ -1,13 +1,21 @@
 import os
 from datetime import datetime, timedelta, timezone
-from decimal import Decimal
 from pathlib import Path
 
 from dotenv import load_dotenv
 
 
+# Single source of truth for loading the .env file. Every other module reads
+# configuration from here (or from os.environ) rather than calling load_dotenv
+# again, so there is no import-order fragility.
 ENV_FILE = Path(__file__).resolve().parent.parent / ".env"
 load_dotenv(ENV_FILE)
+
+
+# Database connection string. Required in every environment.
+DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("DATABASE_URL is not configured")
 
 
 # Business timezone (Pakistan is a fixed UTC+5, no DST). Used so "today"
@@ -41,9 +49,9 @@ ACCESS_TOKEN_EXPIRE_MINUTES = int(
     os.getenv("ACCESS_TOKEN_EXPIRE_MINUTES", "10080")  # 7 days
 )
 
-# Flat delivery fee (Rs.) added to delivery orders. Matches the brochure's
-# "Delivery: Rs. 80 within 3 km".
-DELIVERY_FEE = Decimal(os.getenv("DELIVERY_FEE", "80"))
+# JWT issuer / audience claims, validated on every token decode.
+JWT_ISSUER = os.getenv("JWT_ISSUER", "mehak-kitchen")
+JWT_AUDIENCE = os.getenv("JWT_AUDIENCE", "mehak-kitchen-api")
 
 
 # ---------------------------------------------------------------------------

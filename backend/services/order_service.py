@@ -1,51 +1,25 @@
 from decimal import Decimal
-from datetime import datetime, timezone
 from uuid import UUID
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, object_session, selectinload
 
 from models.models import (
     Customer,
     MenuItem,
     Order,
-    OrderCategoryEnum,
+    OrderStatusEnum,
     OrderTypeEnum,
     OrderItem,
     Payment,
     PaymentStatusEnum,
-    Settings,
+    TableStatusEnum,
     Table,
 )
 from schemas.schemas import OrderCreate
-
-
-def compute_advance(
-    total: Decimal,
-    category: OrderCategoryEnum,
-    settings: Settings,
-) -> tuple[bool, Decimal]:
-    """Whether an advance is required for this order, and how much.
-
-    Custom / subscription / large orders (and any order at or above the
-    configured large-order threshold) require an advance. The percentage and
-    threshold both live in Settings so the rule can change without code edits.
-    """
-    total = Decimal(total or 0)
-    threshold = settings.large_order_threshold or Decimal("0")
-    required = category in (
-        OrderCategoryEnum.custom,
-        OrderCategoryEnum.subscription,
-        OrderCategoryEnum.large,
-    ) or (threshold > 0 and total >= threshold)
-
-    if not required:
-        return False, Decimal("0")
-
-    percent = settings.advance_payment_percent or Decimal("0")
-    amount = (total * percent / Decimal("100")).quantize(Decimal("1"))
-    return True, amount
+from services.pricing import compute_advance
+from services.settings_service import get_settings, orders_today
 
 
 def create_order(
@@ -53,8 +27,6 @@ def create_order(
     order_data: OrderCreate,
 ) -> Order:
     # Capacity gate: honour the accepting-orders switch and daily cap.
-    from services.settings_service import get_settings, orders_today
-
     settings = get_settings(db)
     if not settings.accepting_orders:
         raise HTTPException(
@@ -235,11 +207,12 @@ def create_order(
     return _annotate(order)
 
 
-def _annotate(order: Order) -> Order:
-    """Attach transient customer/payment roll-up fields for the API response."""
-    from services.settings_service import get_settings
-    from sqlalchemy.orm import object_session
+def _annotate(order: Order, settings=None) -> Order:
+    """Attach transient customer/payment roll-up fields for the API response.
 
+    Pass ``settings`` when annotating many orders in a loop so we don't query
+    the settings row once per order.
+    """
     order.customer_name = order.customer.name if order.customer else None
 
     paid = sum(
@@ -261,9 +234,11 @@ def _annotate(order: Order) -> Order:
     else:
         order.payment_status = "partial"
 
-    session = object_session(order)
-    if session is not None:
-        settings = get_settings(session)
+    if settings is None:
+        session = object_session(order)
+        settings = get_settings(session) if session is not None else None
+
+    if settings is not None:
         required, amount = compute_advance(total, order.category, settings)
         order.advance_required = required
         order.advance_amount = amount
@@ -276,11 +251,23 @@ def _annotate(order: Order) -> Order:
 
 def get_orders(
     db: Session,
+    limit: int = 500,
+    offset: int = 0,
 ) -> list[Order]:
+    # Fetch settings once, and eager-load relationships to avoid N+1 queries.
+    settings = get_settings(db)
     orders = db.scalars(
-        select(Order).order_by(Order.created_at.desc())
+        select(Order)
+        .options(
+            selectinload(Order.items),
+            selectinload(Order.customer),
+            selectinload(Order.payments),
+        )
+        .order_by(Order.created_at.desc())
+        .offset(offset)
+        .limit(limit)
     ).all()
-    return [_annotate(o) for o in orders]
+    return [_annotate(o, settings) for o in orders]
 
 
 def get_order(
@@ -309,12 +296,6 @@ def cancel_order(
     order: Order,
 ) -> Order:
     """Cancel an order, refund a paid payment, and free its table."""
-    from models.models import (
-        OrderStatusEnum,
-        PaymentStatusEnum,
-        TableStatusEnum,
-    )
-
     if order.status == OrderStatusEnum.cancelled:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

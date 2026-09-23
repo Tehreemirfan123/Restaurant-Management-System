@@ -38,17 +38,16 @@ def test_reports_reflect_activity(client, auth_headers):
         },
     ).json()
 
-    # A high quantity so this dish ranks in top_items regardless of the
-    # other dishes created across the shared test database.
     order = client.post(
         "/orders",
         json={
-            "items": [{"menu_item_id": menu_item["id"], "quantity": 9}]
+            "items": [{"menu_item_id": menu_item["id"], "quantity": 2}]
         },
     ).json()
 
     client.post(
         "/payments",
+        headers=auth_headers,
         json={"order_id": order["id"], "method": "cash"},
     )
 

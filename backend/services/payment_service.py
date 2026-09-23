@@ -8,11 +8,14 @@ from sqlalchemy.orm import Session, selectinload
 
 from models.models import (
     Order,
+    OrderStatusEnum,
     Payment,
     PaymentStatusEnum,
     Staff,
 )
 from schemas.schemas import PaymentCreate, PaymentUpdate
+from services.pricing import compute_advance
+from services.settings_service import get_settings
 
 
 def _paid_total(order: Order) -> Decimal:
@@ -191,8 +194,6 @@ def reconciliation(db: Session, on_date: date) -> dict:
         row["amount"] += p.amount
 
     # Active orders that still carry a balance (unpaid or partially paid).
-    from models.models import OrderStatusEnum
-
     orders = db.scalars(
         select(Order)
         .options(
@@ -202,19 +203,13 @@ def reconciliation(db: Session, on_date: date) -> dict:
         .order_by(Order.created_at.desc())
     ).all()
 
-    settings = None
+    settings = get_settings(db)
     outstanding = []
     for order in orders:
         paid = _paid_total(order)
         balance = Decimal(order.total_amount or 0) - paid
         if balance <= Decimal("0.01"):
             continue
-        if settings is None:
-            from services.settings_service import get_settings
-
-            settings = get_settings(db)
-        from services.order_service import compute_advance
-
         required, advance = compute_advance(
             order.total_amount, order.category, settings
         )

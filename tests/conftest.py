@@ -16,6 +16,12 @@ from sqlalchemy.orm import Session, sessionmaker
 from database.database import Base, get_db
 from main import app
 
+# Tests share a single client IP and run many requests per minute, so disable
+# the rate limiter for the suite (it's exercised separately, not here).
+from core.rate_limit import limiter
+
+limiter.enabled = False
+
 # Load TEST_DATABASE_URL (and friends) from backend/.env
 load_dotenv(BACKEND_DIR / ".env")
 
@@ -58,12 +64,23 @@ def setup_database():
 
 @pytest.fixture
 def db_session():
-    session = TestingSessionLocal()
+    # Each test runs inside an outer transaction that is rolled back at the end,
+    # so nothing a test writes leaks into other tests. The session joins that
+    # transaction using SAVEPOINTs, so the app's own db.commit() calls are
+    # contained and undone on teardown (true test isolation).
+    connection = engine.connect()
+    transaction = connection.begin()
+    session = TestingSessionLocal(
+        bind=connection,
+        join_transaction_mode="create_savepoint",
+    )
 
     try:
         yield session
     finally:
         session.close()
+        transaction.rollback()
+        connection.close()
 
 
 @pytest.fixture

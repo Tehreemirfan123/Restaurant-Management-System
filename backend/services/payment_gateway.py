@@ -68,7 +68,7 @@ def _amount_due(db, order: Order) -> Decimal:
     """How much to collect now: the advance if one is required and not yet
     paid, otherwise the whole outstanding balance.
     """
-    from services.order_service import compute_advance
+    from services.pricing import compute_advance
     from services.settings_service import get_settings
 
     paid = _paid_total(order)
