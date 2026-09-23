@@ -26,3 +26,8 @@ Thumbs.db
 
 # Logs
 *.log
+
+# Docs
+docs/DEPLOYMENT.md
+docs/PORTFOLIO_DEPLOYMENT.md
+docs/PRODUCTION_TRANSITION.md
