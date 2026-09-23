@@ -1,0 +1,537 @@
+# =============================================================================
+# Mehak's Kitchen — production Kubernetes manifests
+# =============================================================================
+# Apply order is handled automatically by kubectl (it creates the namespace
+# first). Before applying, replace every value marked REPLACE_ME and build +
+# push the two images referenced below.
+#
+#   kubectl apply -f production-deployment.yaml
+#
+# NOTE ON NETWORK POLICIES: they are only enforced by a CNI that supports them
+# (Calico, Cilium, Antrea, etc.). On a cluster without such a CNI, the policies
+# are silently ignored — confirm your CNI enforces NetworkPolicy.
+# =============================================================================
+
+---
+# -----------------------------------------------------------------------------
+# Namespace — with Pod Security Admission set to "restricted", the strongest
+# built-in baseline (blocks root, privilege escalation, host access, etc.).
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mehak-kitchen
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/audit: restricted
+    pod-security.kubernetes.io/warn: restricted
+
+---
+# -----------------------------------------------------------------------------
+# ConfigMap — NON-secret configuration only. Nothing sensitive goes here.
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: mehak-kitchen
+data:
+  APP_ENV: "production"
+  ACCESS_TOKEN_EXPIRE_MINUTES: "10080"      # 7 days
+  BUSINESS_UTC_OFFSET: "5"                   # Asia/Karachi
+  PAYMENT_GATEWAY: "sandbox"                 # flip to jazzcash/easypaisa when live
+  CORS_ORIGINS: "https://mehakskitchen.example.com"
+  FRONTEND_URL: "https://mehakskitchen.example.com"
+  API_BASE_URL: "https://mehakskitchen.example.com/api"
+
+---
+# -----------------------------------------------------------------------------
+# Secret — all sensitive values. This is a TEMPLATE: do NOT commit real values.
+#
+# Prefer creating it out-of-band instead of committing this file with secrets:
+#
+#   kubectl create secret generic app-secrets -n mehak-kitchen \
+#     --from-literal=POSTGRES_USER=mehak \
+#     --from-literal=POSTGRES_PASSWORD="$(openssl rand -base64 24)" \
+#     --from-literal=POSTGRES_DB=mehak_kitchen \
+#     --from-literal=SECRET_KEY="$(openssl rand -hex 32)" \
+#     --from-literal=DATABASE_URL="postgresql://mehak:<same-password>@database:5432/mehak_kitchen"
+#
+# For GitOps, use Sealed Secrets or the External Secrets Operator (backed by a
+# cloud secrets manager) so plaintext never lives in git.
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: mehak-kitchen
+type: Opaque
+stringData:
+  POSTGRES_USER: "mehak"
+  POSTGRES_PASSWORD: "REPLACE_ME_STRONG_DB_PASSWORD"
+  POSTGRES_DB: "mehak_kitchen"
+  # 32-byte random hex; generate with: openssl rand -hex 32
+  SECRET_KEY: "REPLACE_ME_LONG_RANDOM_JWT_SECRET"
+  # Host MUST be the database Service name; user/password/db MUST match above.
+  DATABASE_URL: "postgresql://mehak:REPLACE_ME_STRONG_DB_PASSWORD@database:5432/mehak_kitchen"
+
+---
+# -----------------------------------------------------------------------------
+# PersistentVolumeClaim — durable storage for PostgreSQL. Survives pod
+# restarts, rescheduling and image upgrades. Backed by your cloud's default
+# dynamic provisioner (EBS/GCE PD/Azure Disk); set storageClassName to match.
+# -----------------------------------------------------------------------------
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: mehak-kitchen
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # storageClassName: gp3          # e.g. AWS gp3 / GCP standard-rwo — set yours
+  resources:
+    requests:
+      storage: 10Gi
+
+---
+# -----------------------------------------------------------------------------
+# PostgreSQL — internal only. Runs as a non-root user, drops all capabilities,
+# and stores data on the PVC above.
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: mehak-kitchen
+  labels:
+    app: database
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate            # single writer for a ReadWriteOnce volume
+  selector:
+    matchLabels:
+      app: database
+  template:
+    metadata:
+      labels:
+        app: database
+    spec:
+      securityContext:
+        # postgres user in the alpine image is uid/gid 70 (999 on debian).
+        runAsNonRoot: true
+        runAsUser: 70
+        runAsGroup: 70
+        fsGroup: 70             # makes the mounted PVC writable by postgres
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          envFrom:
+            - secretRef:
+                name: app-secrets    # POSTGRES_USER / PASSWORD / DB
+          env:
+            # Keep data in a subdirectory so the volume root (which may contain
+            # lost+found) doesn't clash with initdb.
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          securityContext:
+            allowPrivilegeEscalation: false
+            # NOTE: postgres writes to several root paths at runtime, so a fully
+            # read-only root filesystem is not reliably applicable here. The
+            # writable areas are constrained to emptyDir + the PVC, and every
+            # other hardening (non-root, no-privesc, drop ALL caps) is enforced.
+            readOnlyRootFilesystem: false
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: postgres-data
+              mountPath: /var/lib/postgresql/data
+            - name: run
+              mountPath: /var/run/postgresql
+            - name: tmp
+              mountPath: /tmp
+          readinessProbe:
+            exec:
+              command: ["sh", "-c", 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1']
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command: ["sh", "-c", 'pg_isready -U "$POSTGRES_USER" -d "$POSTGRES_DB" -h 127.0.0.1']
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "1Gi"
+      volumes:
+        - name: postgres-data
+          persistentVolumeClaim:
+            claimName: postgres-data
+        - name: run
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
+
+---
+# PostgreSQL Service — ClusterIP: reachable ONLY from inside the cluster.
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: mehak-kitchen
+  labels:
+    app: database
+spec:
+  type: ClusterIP
+  selector:
+    app: database
+  ports:
+    - port: 5432
+      targetPort: 5432
+
+---
+# -----------------------------------------------------------------------------
+# Backend (FastAPI) — internal only. Migrations run once in an initContainer,
+# then the API starts. Runs as non-root with a read-only root filesystem.
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: mehak-kitchen
+  labels:
+    app: backend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: backend
+  template:
+    metadata:
+      labels:
+        app: backend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Apply Alembic migrations before the API serves traffic. Runs to
+        # completion; if it fails the pod never becomes ready.
+        - name: migrate
+          image: REPLACE_ME_REGISTRY/mehak-kitchen/backend:1.0.0
+          command: ["alembic", "upgrade", "head"]
+          env:
+            - name: HOME
+              value: /tmp
+            - name: APP_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: app-config
+                  key: APP_ENV
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DATABASE_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: backend
+          image: REPLACE_ME_REGISTRY/mehak-kitchen/backend:1.0.0
+          ports:
+            - containerPort: 8000
+          # Non-secret config from the ConfigMap...
+          envFrom:
+            - configMapRef:
+                name: app-config
+          # ...and the sensitive values injected individually from the Secret.
+          env:
+            - name: HOME
+              value: /tmp
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: DATABASE_URL
+            - name: SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: SECRET_KEY
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "256Mi"
+            limits:
+              cpu: "1"
+              memory: "512Mi"
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: tmp
+          emptyDir: {}
+
+---
+# Backend Service — ClusterIP: reachable ONLY from inside the cluster
+# (the frontend nginx proxies to it; it is never exposed publicly).
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: mehak-kitchen
+  labels:
+    app: backend
+spec:
+  type: ClusterIP
+  selector:
+    app: backend
+  ports:
+    - port: 8000
+      targetPort: 8000
+
+---
+# -----------------------------------------------------------------------------
+# Frontend (nginx serving the built SPA + /api reverse proxy). This is the
+# ONLY workload exposed to the internet (via the Ingress below).
+# -----------------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: mehak-kitchen
+  labels:
+    app: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: frontend
+  template:
+    metadata:
+      labels:
+        app: frontend
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101            # nginx user in nginx-unprivileged
+        runAsGroup: 101
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: frontend
+          image: REPLACE_ME_REGISTRY/mehak-kitchen/frontend:1.0.0
+          ports:
+            - containerPort: 8080
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          # nginx needs a few writable paths under a read-only root filesystem.
+          volumeMounts:
+            - name: tmp
+              mountPath: /tmp
+            - name: cache
+              mountPath: /var/cache/nginx
+            - name: run
+              mountPath: /var/run
+      volumes:
+        - name: tmp
+          emptyDir: {}
+        - name: cache
+          emptyDir: {}
+        - name: run
+          emptyDir: {}
+
+---
+# Frontend Service — ClusterIP; the Ingress below is what exposes it.
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: mehak-kitchen
+  labels:
+    app: frontend
+spec:
+  type: ClusterIP
+  selector:
+    app: frontend
+  ports:
+    - port: 80
+      targetPort: 8080
+
+---
+# -----------------------------------------------------------------------------
+# Ingress — the single public entry point. Terminates TLS and routes to the
+# frontend Service only. (Alternative: set the frontend Service type to
+# LoadBalancer instead of using an Ingress — but never the backend/database.)
+# -----------------------------------------------------------------------------
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: frontend
+  namespace: mehak-kitchen
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod   # if using cert-manager
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - mehakskitchen.example.com
+      secretName: mehak-kitchen-tls
+  rules:
+    - host: mehakskitchen.example.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: frontend
+                port:
+                  number: 80
+
+---
+# -----------------------------------------------------------------------------
+# NetworkPolicies (require a CNI that enforces them).
+# -----------------------------------------------------------------------------
+# 1) Default-deny all ingress in the namespace. Nothing can receive traffic
+#    until an explicit policy below allows it.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-ingress
+  namespace: mehak-kitchen
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+
+---
+# 2) Database accepts traffic ONLY from the backend, ONLY on 5432.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: db-allow-backend-only
+  namespace: mehak-kitchen
+spec:
+  podSelector:
+    matchLabels:
+      app: database
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: backend
+      ports:
+        - protocol: TCP
+          port: 5432
+
+---
+# 3) Backend accepts traffic ONLY from the frontend, ONLY on 8000.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: backend-allow-frontend-only
+  namespace: mehak-kitchen
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - podSelector:
+            matchLabels:
+              app: frontend
+      ports:
+        - protocol: TCP
+          port: 8000
+
+---
+# 4) Frontend accepts traffic only from the ingress-controller namespace,
+#    on 8080. (Adjust the namespace label if your controller lives elsewhere;
+#    if you expose the frontend via a LoadBalancer Service instead of an
+#    Ingress, relax this to suit that traffic path.)
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: frontend-allow-ingress
+  namespace: mehak-kitchen
+spec:
+  podSelector:
+    matchLabels:
+      app: frontend
+  policyTypes:
+    - Ingress
+  ingress:
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: ingress-nginx
+      ports:
+        - protocol: TCP
+          port: 8080

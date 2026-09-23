@@ -20,11 +20,20 @@ def local_today():
     return datetime.now(BUSINESS_TZ).date()
 
 
-# Secret used to sign JWTs. MUST be overridden in production via the .env file.
-SECRET_KEY = os.getenv(
-    "SECRET_KEY",
-    "change-me-in-production-this-is-not-secure",
-)
+# Deployment environment. Set APP_ENV=production in the cluster so the app
+# refuses to boot with insecure development defaults.
+APP_ENV = os.getenv("APP_ENV", "development")
+
+# Secret used to sign JWTs. In production it MUST come from a Kubernetes Secret
+# (injected as an env var); the insecure default is only tolerated in dev/test.
+_INSECURE_SECRET = "change-me-in-production-this-is-not-secure"
+SECRET_KEY = os.getenv("SECRET_KEY", _INSECURE_SECRET)
+
+if APP_ENV == "production" and SECRET_KEY == _INSECURE_SECRET:
+    raise RuntimeError(
+        "SECRET_KEY must be set from a secret in production "
+        "(the insecure development default is not allowed)."
+    )
 
 JWT_ALGORITHM = "HS256"
 
