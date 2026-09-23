@@ -11,6 +11,7 @@ from sqlalchemy import text
 from core.rate_limit import limiter
 from database.database import engine
 from routers.auth import router as auth_router
+from routers.config import router as config_router
 from routers.customers import router as customers_router
 from routers.inventory import router as inventory_router
 from routers.menu import router as menu_router
@@ -77,6 +78,7 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
 
 
 app.include_router(auth_router)
+app.include_router(config_router)
 app.include_router(menu_router)
 app.include_router(orders_router)
 # Public gateway endpoints first, then the staff-only payments router.

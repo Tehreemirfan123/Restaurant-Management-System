@@ -1,0 +1,84 @@
+# =============================================================================
+# Client profile — Mehak's Kitchen (Restaurant vertical)
+# =============================================================================
+# This file declares the CONFIGURABLE surface of the system: identity, brand,
+# terminology, roles, enabled modules and business-rule parameters. It sits on
+# top of the core/restaurant boundary documented in docs/ARCHITECTURE.md.
+#
+# It is client data, NOT secrets — real secrets (DB URL, JWT key, gateway
+# credentials) stay in the environment / Kubernetes Secrets, never here.
+#
+# Today the running app still reads its live values from the DB `settings`
+# table; this profile is the single declarative source a new client instance
+# is spun up from, and its non-secret parts are served at GET /client-config.
+# The values below intentionally mirror this client's current settings.
+# =============================================================================
+
+client:
+  id: mehaks-kitchen
+  vertical: restaurant
+
+brand:
+  name: "Mehak's Kitchen"
+  tagline: "Khanoon ki Mehak"
+  # Palette (see frontend design tokens).
+  colors:
+    maroon: "#7a1f2b"
+    cream: "#f7f1e3"
+    gold: "#c8a24a"
+    sage: "#8a9a6b"
+  logo: "frontend/src/assets/hero.png"
+
+locale:
+  language: en
+  currency: PKR
+  timezone: Asia/Karachi              # BUSINESS_UTC_OFFSET = 5
+
+# What core nouns are called for this client (drives labels in the UI).
+terminology:
+  customer: Customer
+  staff: Staff
+  order: Order
+
+# Which capabilities are switched on for this client.
+modules:
+  # Horizontal core — always present (see ARCHITECTURE.md "core").
+  core: [auth, rbac, users, customers, settings, audit, reports, files, notifications]
+  # Vertical (restaurant) modules enabled for this client.
+  enabled: [menu, orders, pos, kitchen, inventory, recipes, waste, feedback, payments]
+
+# Role -> permission intent. "*" means all actions on that resource / everything.
+roles:
+  admin: ["*"]
+  staff:
+    - "orders:*"
+    - "pos:*"
+    - "kitchen:*"
+    - "payments:record"
+    - "customers:read"
+
+# Payment behaviour (the gateway abstraction is core; these are the knobs).
+payments:
+  gateway_enabled: false             # PAYMENT_GATEWAY_ENABLED — online checkout off for now
+  methods: [cash, bank_transfer, jazzcash, easypaisa]
+  advance_percent: 50                # advance required for custom/subscription/large orders
+  large_order_threshold: 3000        # PKR at/above which an advance is required
+
+# Restaurant delivery rule parameters.
+# Changes in delivery charges in the code
+delivery:
+  base_fee: 80                       # covers the base radius
+  base_radius_km: 3
+  per_km: 26                         # added per km beyond the base radius
+
+# Customer-facing / behavioural feature flags.
+features:
+  customer_portal: true
+  online_payments: false
+  whatsapp_ordering: true
+  rotating_daily_menu: true          # menu items are served by day_of_week
+
+# Ordering guard-rails.
+ordering:
+  accepting_orders: true
+  daily_order_cap: null              # null = no cap
