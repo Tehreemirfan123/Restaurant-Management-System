@@ -27,7 +27,8 @@ Thumbs.db
 # Logs
 *.log
 
-# Docs
+# Docs (deployment runbooks kept out of the public repo)
 docs/DEPLOYMENT.md
 docs/PORTFOLIO_DEPLOYMENT.md
 docs/PRODUCTION_TRANSITION.md
+docs/PORTFOLIO_ALWAYS_ON.md
