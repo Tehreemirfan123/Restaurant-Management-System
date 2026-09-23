@@ -1,0 +1,263 @@
+# =============================================================================
+# Mehak's Kitchen — PORTFOLIO / DEMO deployment (local kind cluster)
+# =============================================================================
+# A self-contained manifest for a single-node `kind` cluster, meant to
+# demonstrate a containerised full-stack app on Kubernetes for a portfolio.
+#
+# It is deliberately SIMPLER than k8s/production-deployment.yaml:
+#   - images are built locally and `kind load`-ed (no registry needed)
+#   - DEMO secrets are inline (see the "DEMO-ONLY" notes) — safe for a throwaway
+#     public demo, NOT for production
+#   - no Ingress / cert-manager / NetworkPolicies (kind's default CNI doesn't
+#     enforce NetworkPolicy anyway) — reach it with `kubectl port-forward`
+#   - a fresh Postgres is migrated AND seeded (admin + menu + settings), so the
+#     demo starts as a clean Mehak's Kitchen with NO transactional data
+#
+# Apply with the runbook in docs/PORTFOLIO_DEPLOYMENT.md.
+# =============================================================================
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: mehak-demo
+  labels:
+    # The app is restricted-PSS compliant; keep the strong baseline even in the demo.
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/warn: restricted
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+  namespace: mehak-demo
+data:
+  APP_ENV: "production"                 # runs in production mode with a demo secret
+  ACCESS_TOKEN_EXPIRE_MINUTES: "10080"
+  BUSINESS_UTC_OFFSET: "5"
+  PAYMENT_GATEWAY: "sandbox"
+  CORS_ORIGINS: "http://localhost"      # unused in practice (frontend proxies /api same-origin)
+  FRONTEND_URL: "http://localhost:8080"
+  API_BASE_URL: "http://localhost:8080/api"
+  # Seed a demo admin (see seed.py). DEMO-ONLY credentials.
+  SEED_ADMIN_USERNAME: "admin"
+  SEED_ADMIN_PASSWORD: "admin123"
+
+---
+# DEMO-ONLY secret. Values are intentionally simple for a throwaway public demo.
+# For a real deployment these come from a real Secret / secrets manager and are
+# rotated — see docs/PRODUCTION_TRANSITION.md.
+apiVersion: v1
+kind: Secret
+metadata:
+  name: app-secrets
+  namespace: mehak-demo
+type: Opaque
+stringData:
+  POSTGRES_USER: "mehak"
+  POSTGRES_PASSWORD: "demo-password-123"
+  POSTGRES_DB: "mehak_kitchen"
+  SECRET_KEY: "demo-only-jwt-secret-not-for-production-0123456789abcdef"
+  DATABASE_URL: "postgresql://mehak:demo-password-123@database:5432/mehak_kitchen"
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-data
+  namespace: mehak-demo
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi                      # kind's default "standard" storageClass provides this
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: database
+  namespace: mehak-demo
+  labels: { app: database }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: database } }
+  template:
+    metadata:
+      labels: { app: database }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 70                    # postgres user in the alpine image
+        runAsGroup: 70
+        fsGroup: 70
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          envFrom:
+            - secretRef: { name: app-secrets }
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports: [ { containerPort: 5432 } ]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: false
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: postgres-data, mountPath: /var/lib/postgresql/data }
+            - { name: run, mountPath: /var/run/postgresql }
+            - { name: tmp, mountPath: /tmp }
+          readinessProbe:
+            exec: { command: ["sh","-c","pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\" -h 127.0.0.1"] }
+            initialDelaySeconds: 8
+            periodSeconds: 8
+      volumes:
+        - { name: postgres-data, persistentVolumeClaim: { claimName: postgres-data } }
+        - { name: run, emptyDir: {} }
+        - { name: tmp, emptyDir: {} }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: database
+  namespace: mehak-demo
+  labels: { app: database }
+spec:
+  type: ClusterIP
+  selector: { app: database }
+  ports: [ { port: 5432, targetPort: 5432 } ]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  namespace: mehak-demo
+  labels: { app: backend }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: backend } }
+  template:
+    metadata:
+      labels: { app: backend }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: { type: RuntimeDefault }
+      initContainers:
+        # Migrate the fresh DB, then seed admin + menu + settings (idempotent).
+        # This is what makes the demo start as a clean Mehak's Kitchen with no
+        # transactional data.
+        - name: migrate-and-seed
+          image: mehak-backend:demo
+          imagePullPolicy: IfNotPresent
+          command: ["sh","-c","alembic upgrade head && python seed.py"]
+          env:
+            - { name: HOME, value: /tmp }
+          envFrom:
+            - configMapRef: { name: app-config }
+            - secretRef: { name: app-secrets }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      containers:
+        - name: backend
+          image: mehak-backend:demo
+          imagePullPolicy: IfNotPresent
+          env:
+            - { name: HOME, value: /tmp }
+          envFrom:
+            - configMapRef: { name: app-config }
+            - secretRef: { name: app-secrets }
+          ports: [ { containerPort: 8000 } ]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet: { path: /health, port: 8000 }
+            initialDelaySeconds: 20
+            periodSeconds: 15
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: backend
+  namespace: mehak-demo
+  labels: { app: backend }
+spec:
+  type: ClusterIP
+  selector: { app: backend }
+  ports: [ { port: 8000, targetPort: 8000 } ]
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  namespace: mehak-demo
+  labels: { app: frontend }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: frontend } }
+  template:
+    metadata:
+      labels: { app: frontend }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 101                   # nginx-unprivileged
+        runAsGroup: 101
+        seccompProfile: { type: RuntimeDefault }
+      containers:
+        - name: frontend
+          image: mehak-frontend:demo
+          imagePullPolicy: IfNotPresent
+          ports: [ { containerPort: 8080 } ]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          readinessProbe:
+            httpGet: { path: /, port: 8080 }
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - { name: tmp, mountPath: /tmp }
+            - { name: cache, mountPath: /var/cache/nginx }
+            - { name: run, mountPath: /var/run }
+      volumes:
+        - { name: tmp, emptyDir: {} }
+        - { name: cache, emptyDir: {} }
+        - { name: run, emptyDir: {} }
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend
+  namespace: mehak-demo
+  labels: { app: frontend }
+spec:
+  type: ClusterIP
+  selector: { app: frontend }
+  ports: [ { port: 80, targetPort: 8080 } ]
