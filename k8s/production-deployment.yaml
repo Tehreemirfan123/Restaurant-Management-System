@@ -468,7 +468,8 @@ spec:
     - Ingress
 
 ---
-# 2) Database accepts traffic ONLY from the backend, ONLY on 5432.
+# 2) Database accepts traffic ONLY from the backend and the backup job,
+#    ONLY on 5432. Everything else is blocked by the default-deny policy.
 apiVersion: networking.k8s.io/v1
 kind: NetworkPolicy
 metadata:
@@ -485,6 +486,9 @@ spec:
         - podSelector:
             matchLabels:
               app: backend
+        - podSelector:
+            matchLabels:
+              app: postgres-backup
       ports:
         - protocol: TCP
           port: 5432

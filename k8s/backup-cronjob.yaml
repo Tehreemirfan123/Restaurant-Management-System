@@ -1,0 +1,120 @@
+# =============================================================================
+# Automated PostgreSQL backups (pg_dump) for Mehak's Kitchen.
+# =============================================================================
+# A CronJob runs pg_dump on a schedule, writes a gzipped dump to a dedicated
+# PersistentVolumeClaim, and prunes dumps older than the retention window.
+#
+#   kubectl apply -f backup-cronjob.yaml
+#
+# Restore a dump (from a temporary pod that mounts the backup volume):
+#   gunzip -c /backups/mehak-YYYYMMDD-HHMMSS.sql.gz | psql "$DATABASE_URL"
+#
+# For true off-site durability, add a step that uploads $file to object
+# storage (S3/GCS/Azure Blob) — see the commented block in the job command.
+# =============================================================================
+
+---
+# A separate volume for backups, kept independent of the live data volume.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: postgres-backups
+  namespace: mehak-kitchen
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # storageClassName: gp3        # set to match your cluster
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: postgres-backup
+  namespace: mehak-kitchen
+  labels:
+    app: postgres-backup
+spec:
+  # 02:00 every day, in business time. `timeZone` needs Kubernetes >= 1.27;
+  # remove it on older clusters (the schedule then runs in UTC).
+  schedule: "0 2 * * *"
+  timeZone: "Asia/Karachi"
+  concurrencyPolicy: Forbid
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 3
+  jobTemplate:
+    spec:
+      backoffLimit: 2
+      # Clean up finished backup pods after a day.
+      ttlSecondsAfterFinished: 86400
+      template:
+        metadata:
+          labels:
+            app: postgres-backup
+        spec:
+          restartPolicy: OnFailure
+          securityContext:
+            runAsNonRoot: true
+            runAsUser: 70            # postgres user in the alpine image
+            runAsGroup: 70
+            fsGroup: 70              # so the backup PVC is writable
+            seccompProfile:
+              type: RuntimeDefault
+          containers:
+            - name: pg-dump
+              image: postgres:16-alpine
+              env:
+                - name: PGHOST
+                  value: database
+                - name: PGPORT
+                  value: "5432"
+                - name: PGUSER
+                  valueFrom:
+                    secretKeyRef:
+                      name: app-secrets
+                      key: POSTGRES_USER
+                - name: PGPASSWORD
+                  valueFrom:
+                    secretKeyRef:
+                      name: app-secrets
+                      key: POSTGRES_PASSWORD
+                - name: PGDATABASE
+                  valueFrom:
+                    secretKeyRef:
+                      name: app-secrets
+                      key: POSTGRES_DB
+                - name: RETENTION_DAYS
+                  value: "14"
+              command:
+                - /bin/sh
+                - -c
+                - |
+                  set -eu
+                  ts=$(date +%Y%m%d-%H%M%S)
+                  file="/backups/mehak-${ts}.sql.gz"
+                  echo "Backing up ${PGDATABASE} to ${file}"
+                  pg_dump --no-owner --no-privileges | gzip > "${file}"
+                  echo "Pruning backups older than ${RETENTION_DAYS} days"
+                  find /backups -name 'mehak-*.sql.gz' -mtime "+${RETENTION_DAYS}" -delete
+                  echo "Current backups:"
+                  ls -lh /backups
+                  # --- Optional off-site upload (uncomment + add credentials) ---
+                  # aws s3 cp "${file}" "s3://your-bucket/mehak-kitchen/"
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: backups
+                  mountPath: /backups
+                - name: tmp
+                  mountPath: /tmp
+          volumes:
+            - name: backups
+              persistentVolumeClaim:
+                claimName: postgres-backups
+            - name: tmp
+              emptyDir: {}
